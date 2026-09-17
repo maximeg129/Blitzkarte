@@ -17,6 +17,12 @@ const MAX_WRITING_PROMPTS = 15;
 const MAX_FILL_BLANK = 15;
 const MAX_IMAGES = 6;
 
+const LANGUAGE_NAMES = { fr: "French", nl: "Dutch", en: "English" };
+
+function languageName(code) {
+  return LANGUAGE_NAMES[code] || LANGUAGE_NAMES.fr;
+}
+
 function fail(res, status, msg) {
   res.status(status).json({ ok: false, msg });
   return null;
@@ -63,7 +69,7 @@ exports.generateSet = onRequest(
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const { images, subject, context } = req.body || {};
+    const { images, subject, context, language } = req.body || {};
     if (!Array.isArray(images) || images.length === 0) {
       return fail(res, 400, "Au moins une image est requise.");
     }
@@ -167,6 +173,9 @@ exports.generateSet = onRequest(
         ? `Ces ${images.length} photos sont les pages successives d'un même exercice : combine-les en un seul set cohérent.`
         : "";
 
+    const langName = languageName(language);
+    const langNote = `Rédige le titre, les questions de quiz, les phrases à trous et les prompts d'écriture en ${langName}. Les fiches (front/back) doivent rester fidèles au contenu de la photo (ne traduis pas ce qui y est écrit, sauf si la photo elle-même demande une traduction).`;
+
     try {
       const message = await anthropic.messages.create({
         model: MODEL,
@@ -180,7 +189,7 @@ exports.generateSet = onRequest(
               ...imageBlocks,
               {
                 type: "text",
-                text: `Regarde cette photo (ou ces photos) d'un exercice scolaire (probablement en allemand ou dans une autre matière). ${pageNote} Génère un set de fiches de révision recto/verso, un petit quiz, des exercices d'écriture avec une réponse de référence, et des phrases à trous (texte à trous) avec le mot manquant remplacé par ___. ${hints} Réponds uniquement via l'outil submit_flashcard_set.`,
+                text: `Regarde cette photo (ou ces photos) d'un exercice scolaire (probablement en allemand ou dans une autre matière). ${pageNote} Génère un set de fiches de révision recto/verso, un petit quiz, des exercices d'écriture avec une réponse de référence, et des phrases à trous (texte à trous) avec le mot manquant remplacé par ___. ${hints} ${langNote} Réponds uniquement via l'outil submit_flashcard_set.`,
               },
             ],
           },
@@ -262,7 +271,7 @@ exports.checkWriting = onRequest(
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const { answerText, referenceAnswer, prompt } = req.body || {};
+    const { answerText, referenceAnswer, prompt, language } = req.body || {};
     if (!isNonEmptyString(answerText) || !isNonEmptyString(referenceAnswer)) {
       return fail(res, 400, "Réponse ou référence manquante.");
     }
@@ -299,7 +308,7 @@ exports.checkWriting = onRequest(
                 type: "text",
                 text: `Tu es un correcteur exigeant mais bienveillant. ${
                   prompt ? `Exercice : ${prompt}` : ""
-                }\nRéponse de référence : ${referenceAnswer}\nRéponse de l'élève : ${answerText}\nÉvalue la réponse de l'élève (tolère les petites fautes d'accent ou de frappe pour un crédit partiel), donne un score de 0 à 100, et un retour court, énergique et constructif en français. Réponds uniquement via l'outil submit_grading.`,
+                }\nRéponse de référence : ${referenceAnswer}\nRéponse de l'élève : ${answerText}\nÉvalue la réponse de l'élève (tolère les petites fautes d'accent ou de frappe pour un crédit partiel), donne un score de 0 à 100, et un retour court, énergique et constructif, rédigé en ${languageName(language)}. Réponds uniquement via l'outil submit_grading.`,
               },
             ],
           },

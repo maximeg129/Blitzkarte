@@ -409,6 +409,7 @@
     <div class="logo">⚡ BLITZKARTE</div>
     <div id="combo-readout">COMBO x0</div>
     <div id="topbar-actions">
+      <button class="icon-btn" id="language-btn" type="button" title="Langue">🌐</button>
       <button class="icon-btn" id="achievements-btn" type="button" title="Trophées">🏆</button>
       <button class="icon-btn" id="sound-toggle" type="button" aria-pressed="false" title="Son">🔇</button>
       <button class="icon-btn" id="signout-btn" type="button" title="Se déconnecter">⏻</button>
@@ -423,8 +424,8 @@
 
     <section id="view-config" class="screen-center" data-view hidden>
       <div class="panel" style="max-width:520px">
-        <h2 style="color:var(--error)">Configuration manquante</h2>
-        <p class="muted">Renseigne ton <code>firebaseConfig</code> en haut du script (section « À CONFIGURER ») avec les valeurs de ton projet Firebase pour lancer la salle d'arcade.</p>
+        <h2 style="color:var(--error)" id="config-title">Configuration manquante</h2>
+        <p class="muted" id="config-body">Renseigne ton <code>firebaseConfig</code> en haut du script (section « À CONFIGURER ») avec les valeurs de ton projet Firebase pour lancer la salle d'arcade.</p>
       </div>
     </section>
 
@@ -433,14 +434,18 @@
         <use href="#blitz-mascot"></use>
       </svg>
       <h1 class="marquee" style="font-size:2rem;color:var(--accent)">BLITZKARTE</h1>
-      <p class="muted">Insère ta photo, révise, deviens champion. Connecte-toi pour entrer dans la salle.</p>
+      <p class="muted" id="auth-tagline">Insère ta photo, révise, deviens champion. Connecte-toi pour entrer dans la salle.</p>
       <button class="btn btn-primary" id="signin-btn" type="button">GO ! Se connecter avec Google</button>
       <p class="error-banner" id="auth-error" hidden></p>
     </section>
 
+    <section id="view-language" class="screen-center" data-view hidden>
+      <div id="language-content"></div>
+    </section>
+
     <section id="view-room" class="screen" data-view hidden>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <h2 class="marquee" style="font-size:1.4rem">LA SALLE D'ARCADE</h2>
+        <h2 class="marquee" style="font-size:1.4rem" id="room-title">LA SALLE D'ARCADE</h2>
         <button class="btn btn-primary" id="new-set-btn" type="button">+ Nouvelle borne</button>
       </div>
       <div id="room-content"></div>
@@ -449,19 +454,19 @@
     <section id="view-scan" class="screen" data-view hidden>
       <button class="btn btn-ghost" id="scan-back-btn" type="button">← Retour à la salle</button>
       <div class="panel" style="margin-top:16px;max-width:520px">
-        <h2 class="marquee" style="font-size:1.1rem;color:var(--accent)">INSÈRE TA PHOTO</h2>
-        <p class="muted">Prends en photo ton exercice, Blitz s'occupe du reste.</p>
+        <h2 class="marquee" style="font-size:1.1rem;color:var(--accent)" id="scan-title">INSÈRE TA PHOTO</h2>
+        <p class="muted" id="scan-tagline">Prends en photo ton exercice, Blitz s'occupe du reste.</p>
         <div class="field">
-          <label for="scan-file">Photo de l'exercice (plusieurs pages possibles)</label>
+          <label for="scan-file" id="scan-file-label">Photo de l'exercice (plusieurs pages possibles)</label>
           <input type="file" id="scan-file" accept="image/*" capture="environment" multiple />
         </div>
         <div class="photo-thumbs" id="scan-thumbs"></div>
         <div class="field">
-          <label for="scan-subject">Matière (optionnel)</label>
+          <label for="scan-subject" id="scan-subject-label">Matière (optionnel)</label>
           <input type="text" id="scan-subject" placeholder="Allemand, Maths…" />
         </div>
         <div class="field">
-          <label for="scan-context">Précisions (optionnel)</label>
+          <label for="scan-context" id="scan-context-label">Précisions (optionnel)</label>
           <input type="text" id="scan-context" placeholder="Chapitre, consigne…" />
         </div>
         <button class="btn btn-primary" id="scan-generate-btn" type="button">Générer le set</button>
@@ -594,6 +599,431 @@ function esc(str) {
   return div.innerHTML;
 }
 
+/* ---------------- i18n ---------------- */
+const LANG_DEFAULT = "fr";
+const LANGUAGES = [
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "nl", label: "Nederlands", flag: "🇳🇱" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+];
+
+const STRINGS = {
+  fr: {
+    "auth.tagline": "Insère ta photo, révise, deviens champion. Connecte-toi pour entrer dans la salle.",
+    "auth.signIn": "GO ! Se connecter avec Google",
+    "auth.error": "Connexion impossible, réessaie.",
+    "config.title": "Configuration manquante",
+    "config.body": 'Renseigne ton <code>firebaseConfig</code> en haut du script (section « À CONFIGURER ») avec les valeurs de ton projet Firebase pour lancer la salle d\'arcade.',
+    "language.title": "Choisis ta langue",
+    "language.subtitle": "Blitzkarte te parlera dans cette langue.",
+    "room.title": "LA SALLE D'ARCADE",
+    "room.newSet": "+ Nouvelle borne",
+    "room.empty": "La salle est vide, viens scanner ta première fiche !",
+    "room.trainSubject": "S'entraîner sur {subject} →",
+    "room.weeklyBoss": "⚡ BOSS DE LA SEMAINE",
+    "room.cardsLearned": "{learned}/{total} fiches sues",
+    "room.levelCleared": "LEVEL CLEARED",
+    "scan.title": "INSÈRE TA PHOTO",
+    "scan.tagline": "Prends en photo ton exercice, Blitz s'occupe du reste.",
+    "scan.photoLabel": "Photo de l'exercice (plusieurs pages possibles)",
+    "scan.subjectLabel": "Matière (optionnel)",
+    "scan.subjectPlaceholder": "Allemand, Maths…",
+    "scan.contextLabel": "Précisions (optionnel)",
+    "scan.contextPlaceholder": "Chapitre, consigne…",
+    "scan.generate": "Générer le set",
+    "scan.removePage": "Retirer cette page",
+    "scan.pageAlt": "Page {n}",
+    "scan.errNoPhoto": "Ajoute au moins une photo d'abord.",
+    "scan.statusScanningOne": "Blitz scanne ta photo…",
+    "scan.statusScanningMany": "Blitz scanne tes pages…",
+    "scan.statusDone": "Set généré, jette un œil !",
+    "scan.previewSummary": "{cards} fiches · {quiz} questions de quiz · {writing} exercice(s) d'écriture · {fillBlank} texte(s) à trous",
+    "scan.accept": "Ajouter à la salle",
+    "scan.discard": "Annuler",
+    "common.backRoom": "← Retour à la salle",
+    "common.backTraining": "← Retour à l'entraînement",
+    "common.retry": "Rejouer →",
+    "common.nextRound": "Manche suivante →",
+    "common.loading": "Chargement…",
+    "common.errServer": "Impossible de contacter le serveur, réessaie plus tard.",
+    "cards.prev": "← Précédente",
+    "cards.next": "Suivante →",
+    "cards.markLearned": "Marquer comme sue",
+    "cards.markedLearned": "Fiche sue ✓",
+    "cards.bossBattle": "⚔ Boss Battle",
+    "cards.writingBtn": "✏ Écriture",
+    "cards.flipAria": "Retourner la carte",
+    "quiz.titleSet": "BOSS BATTLE",
+    "quiz.titleSubject": "BOSS GÉANT",
+    "quiz.answerPlaceholder": "Ta réponse…",
+    "quiz.comboLabel": "COMBO x{combo}",
+    "common.validate": "Valider",
+    "quiz.powerUpActive": "⚡ POWER-UP ACTIF",
+    "quiz.feedbackCrit": "⚡ Coup critique !",
+    "quiz.feedbackGood": "Coup porté !",
+    "quiz.feedbackComboSuffix": "Combo x{combo} 🔥",
+    "quiz.feedbackBad": "Raté ! Combo réinitialisé.",
+    "quiz.resultWin": "BOSS VAINCU",
+    "quiz.resultLose": "MANCHE TERMINÉE",
+    "quiz.scoreCombo": "Score : {score}% · Combo max x{combo}",
+    "quiz.tableScore": "Score",
+    "quiz.tableCombo": "Combo",
+    "quiz.tableDate": "Date",
+    "survival.title": "MODE SURVIE — {subject}",
+    "survival.streakOngoing": "Série en cours : x{streak}",
+    "survival.alive": "Toujours en vie ! Série x{streak} 🔥",
+    "survival.eliminated": "Éliminé ! Série finale : x{streak}",
+    "survival.newRecord": " — Nouveau record !",
+    "match.title": "ASSOCIATION — {subject}",
+    "match.tagline": "Relie chaque terme à sa traduction, le plus vite possible !",
+    "match.done": "TOUT ASSOCIÉ !",
+    "match.time": "Temps : {time}s",
+    "match.newRecordSuffix": " — Nouveau record !",
+    "match.recordSuffix": " (record : {record}s)",
+    "tf.title": "VRAI OU FAUX — {subject}",
+    "tf.progress": "Question {index}/{total} · Score : {score}",
+    "tf.true": "✓ VRAI",
+    "tf.false": "✕ FAUX",
+    "tf.good": "Bien joué !",
+    "tf.bad": "Raté, c'était {answer}.",
+    "tf.resultTitle": "MANCHE TERMINÉE",
+    "tf.resultScore": "Score : {score}/{total}",
+    "fb.title": "TEXTE À TROUS — {subject}",
+    "fb.progress": "Question {index}/{total} · Score : {score}",
+    "fb.good": "Exact !",
+    "fb.bad": "Raté, la réponse était « {answer} ».",
+    "fb.resultTitle": "MANCHE TERMINÉE",
+    "fb.resultScore": "Score : {score}/{total}",
+    "dict.title": "DICTÉE — {subject}",
+    "dict.progress": "Question {index}/{total} · Score : {score}",
+    "dict.tagline": "Écoute et écris ce que tu entends.",
+    "dict.listen": "🔊 Écouter",
+    "dict.placeholder": "Ce que tu as entendu…",
+    "dict.good": "Exact !",
+    "dict.bad": "Raté, c'était « {answer} ».",
+    "dict.resultTitle": "MANCHE TERMINÉE",
+    "dict.resultScore": "Score : {score}/{total}",
+    "writing.title": "EXERCICE D'ÉCRITURE",
+    "writing.placeholder": "Écris ta réponse ici…",
+    "writing.correct": "Corriger",
+    "writing.correcting": "Blitz corrige ta réponse…",
+    "writing.correctionLabel": "Correction : {text}",
+    "writing.nextExercise": "Exercice suivant →",
+    "training.subtitle": "{cards} fiches · {quiz} questions de quiz",
+    "training.boss": "⚔ Boss géant",
+    "training.survival": "🛡 Mode Survie",
+    "training.match": "🧩 Association",
+    "training.truefalse": "⚡ Vrai/Faux éclair",
+    "training.fillblank": "✏ Texte à trous",
+    "training.dictation": "🎧 Dictée",
+    "training.leaderboard": "🏅 Classement",
+    "ach.title": "🏆 TROPHÉES",
+    "ach.first_set": "Première borne créée",
+    "ach.first_clear": "Premier level cleared",
+    "ach.five_clear": "5 sets nettoyés",
+    "ach.streak_7": "Combo x7 en streak",
+    "ach.boss_slayer": "Boss vaincu à 100%",
+    "ach.survivor_10": "Survie x10",
+    "ach.polyglot": "3 matières différentes",
+    "lb.title": "CLASSEMENT — {subject}",
+    "lb.loading": "Chargement…",
+    "lb.headerRank": "#",
+    "lb.headerPlayer": "Joueur",
+    "lb.headerScore": "Score",
+    "lb.headerCombo": "Combo",
+    "lb.empty": "Personne pour l'instant, sois le premier !",
+    "lb.error": "Impossible de charger le classement.",
+    "lb.anonymous": "Anonyme",
+    "topbar.trophies": "Trophées",
+    "topbar.sound": "Son",
+    "topbar.signOut": "Se déconnecter",
+    "topbar.language": "Langue",
+  },
+  nl: {
+    "auth.tagline": "Scan je foto, oefen, en word een kampioen. Log in om de speelhal te betreden.",
+    "auth.signIn": "GO! Inloggen met Google",
+    "auth.error": "Inloggen mislukt, probeer het opnieuw.",
+    "config.title": "Configuratie ontbreekt",
+    "config.body": 'Vul je <code>firebaseConfig</code> bovenaan het script in (sectie « TE CONFIGUREREN ») met de gegevens van je Firebase-project om de speelhal te starten.',
+    "language.title": "Kies je taal",
+    "language.subtitle": "Blitzkarte spreekt vanaf nu deze taal met je.",
+    "room.title": "DE SPEELHAL",
+    "room.newSet": "+ Nieuwe kast",
+    "room.empty": "De speelhal is leeg, scan je eerste fiche!",
+    "room.trainSubject": "Oefen {subject} →",
+    "room.weeklyBoss": "⚡ BAAS VAN DE WEEK",
+    "room.cardsLearned": "{learned}/{total} kaarten geleerd",
+    "room.levelCleared": "LEVEL CLEARED",
+    "scan.title": "PLAATS JE FOTO",
+    "scan.tagline": "Maak een foto van je oefening, Blitz doet de rest.",
+    "scan.photoLabel": "Foto van de oefening (meerdere pagina's mogelijk)",
+    "scan.subjectLabel": "Vak (optioneel)",
+    "scan.subjectPlaceholder": "Duits, Wiskunde…",
+    "scan.contextLabel": "Extra details (optioneel)",
+    "scan.contextPlaceholder": "Hoofdstuk, opdracht…",
+    "scan.generate": "Genereer de set",
+    "scan.removePage": "Deze pagina verwijderen",
+    "scan.pageAlt": "Pagina {n}",
+    "scan.errNoPhoto": "Voeg eerst minstens één foto toe.",
+    "scan.statusScanningOne": "Blitz scant je foto…",
+    "scan.statusScanningMany": "Blitz scant je pagina's…",
+    "scan.statusDone": "Set gegenereerd, neem een kijkje!",
+    "scan.previewSummary": "{cards} kaarten · {quiz} quizvragen · {writing} schrijfoefening(en) · {fillBlank} invuloefening(en)",
+    "scan.accept": "Toevoegen aan de speelhal",
+    "scan.discard": "Annuleren",
+    "common.backRoom": "← Terug naar de speelhal",
+    "common.backTraining": "← Terug naar de training",
+    "common.retry": "Opnieuw →",
+    "common.nextRound": "Volgende ronde →",
+    "common.loading": "Laden…",
+    "common.errServer": "Kan de server niet bereiken, probeer het later opnieuw.",
+    "cards.prev": "← Vorige",
+    "cards.next": "Volgende →",
+    "cards.markLearned": "Markeer als gekend",
+    "cards.markedLearned": "Kaart gekend ✓",
+    "cards.bossBattle": "⚔ Boss Battle",
+    "cards.writingBtn": "✏ Schrijven",
+    "cards.flipAria": "Kaart omdraaien",
+    "quiz.titleSet": "BOSS BATTLE",
+    "quiz.titleSubject": "REUZENBAAS",
+    "quiz.answerPlaceholder": "Jouw antwoord…",
+    "quiz.comboLabel": "COMBO x{combo}",
+    "common.validate": "Bevestigen",
+    "quiz.powerUpActive": "⚡ POWER-UP ACTIEF",
+    "quiz.feedbackCrit": "⚡ Kritieke klap!",
+    "quiz.feedbackGood": "Klap raak!",
+    "quiz.feedbackComboSuffix": "Combo x{combo} 🔥",
+    "quiz.feedbackBad": "Mis! Combo gereset.",
+    "quiz.resultWin": "BAAS VERSLAGEN",
+    "quiz.resultLose": "RONDE VOLTOOID",
+    "quiz.scoreCombo": "Score: {score}% · Max combo x{combo}",
+    "quiz.tableScore": "Score",
+    "quiz.tableCombo": "Combo",
+    "quiz.tableDate": "Datum",
+    "survival.title": "OVERLEVINGSMODUS — {subject}",
+    "survival.streakOngoing": "Huidige reeks: x{streak}",
+    "survival.alive": "Nog steeds in leven! Reeks x{streak} 🔥",
+    "survival.eliminated": "Uitgeschakeld! Eindreeks: x{streak}",
+    "survival.newRecord": " — Nieuw record!",
+    "match.title": "KOPPELEN — {subject}",
+    "match.tagline": "Verbind elk woord met zijn vertaling, zo snel mogelijk!",
+    "match.done": "ALLES GEKOPPELD!",
+    "match.time": "Tijd: {time}s",
+    "match.newRecordSuffix": " — Nieuw record!",
+    "match.recordSuffix": " (record: {record}s)",
+    "tf.title": "WAAR OF NIET WAAR — {subject}",
+    "tf.progress": "Vraag {index}/{total} · Score: {score}",
+    "tf.true": "✓ WAAR",
+    "tf.false": "✕ NIET WAAR",
+    "tf.good": "Goed gedaan!",
+    "tf.bad": "Mis, het was {answer}.",
+    "tf.resultTitle": "RONDE VOLTOOID",
+    "tf.resultScore": "Score: {score}/{total}",
+    "fb.title": "INVULOEFENING — {subject}",
+    "fb.progress": "Vraag {index}/{total} · Score: {score}",
+    "fb.good": "Precies!",
+    "fb.bad": 'Mis, het antwoord was "{answer}".',
+    "fb.resultTitle": "RONDE VOLTOOID",
+    "fb.resultScore": "Score: {score}/{total}",
+    "dict.title": "DICTEE — {subject}",
+    "dict.progress": "Vraag {index}/{total} · Score: {score}",
+    "dict.tagline": "Luister en schrijf op wat je hoort.",
+    "dict.listen": "🔊 Luisteren",
+    "dict.placeholder": "Wat je gehoord hebt…",
+    "dict.good": "Precies!",
+    "dict.bad": 'Mis, het was "{answer}".',
+    "dict.resultTitle": "RONDE VOLTOOID",
+    "dict.resultScore": "Score: {score}/{total}",
+    "writing.title": "SCHRIJFOEFENING",
+    "writing.placeholder": "Schrijf je antwoord hier…",
+    "writing.correct": "Nakijken",
+    "writing.correcting": "Blitz kijkt je antwoord na…",
+    "writing.correctionLabel": "Correctie: {text}",
+    "writing.nextExercise": "Volgende oefening →",
+    "training.subtitle": "{cards} kaarten · {quiz} quizvragen",
+    "training.boss": "⚔ Reuzenbaas",
+    "training.survival": "🛡 Overlevingsmodus",
+    "training.match": "🧩 Koppelen",
+    "training.truefalse": "⚡ Snel waar/niet waar",
+    "training.fillblank": "✏ Invuloefening",
+    "training.dictation": "🎧 Dictee",
+    "training.leaderboard": "🏅 Klassement",
+    "ach.title": "🏆 TROFEEËN",
+    "ach.first_set": "Eerste kast aangemaakt",
+    "ach.first_clear": "Eerste level cleared",
+    "ach.five_clear": "5 sets uitgespeeld",
+    "ach.streak_7": "Combo x7 reeks",
+    "ach.boss_slayer": "Baas verslagen op 100%",
+    "ach.survivor_10": "Overleving x10",
+    "ach.polyglot": "3 verschillende vakken",
+    "lb.title": "KLASSEMENT — {subject}",
+    "lb.loading": "Laden…",
+    "lb.headerRank": "#",
+    "lb.headerPlayer": "Speler",
+    "lb.headerScore": "Score",
+    "lb.headerCombo": "Combo",
+    "lb.empty": "Nog niemand, wees de eerste!",
+    "lb.error": "Kan het klassement niet laden.",
+    "lb.anonymous": "Anoniem",
+    "topbar.trophies": "Trofeeën",
+    "topbar.sound": "Geluid",
+    "topbar.signOut": "Uitloggen",
+    "topbar.language": "Taal",
+  },
+  en: {
+    "auth.tagline": "Scan your photo, practice, become a champion. Sign in to enter the arcade.",
+    "auth.signIn": "GO! Sign in with Google",
+    "auth.error": "Sign-in failed, try again.",
+    "config.title": "Missing configuration",
+    "config.body": 'Fill in your <code>firebaseConfig</code> at the top of the script (the "TO CONFIGURE" section) with your Firebase project\'s values to launch the arcade.',
+    "language.title": "Choose your language",
+    "language.subtitle": "Blitzkarte will speak this language with you.",
+    "room.title": "THE ARCADE ROOM",
+    "room.newSet": "+ New cabinet",
+    "room.empty": "The room is empty, come scan your first card!",
+    "room.trainSubject": "Train on {subject} →",
+    "room.weeklyBoss": "⚡ BOSS OF THE WEEK",
+    "room.cardsLearned": "{learned}/{total} cards learned",
+    "room.levelCleared": "LEVEL CLEARED",
+    "scan.title": "INSERT YOUR PHOTO",
+    "scan.tagline": "Take a photo of your exercise, Blitz handles the rest.",
+    "scan.photoLabel": "Photo of the exercise (multiple pages allowed)",
+    "scan.subjectLabel": "Subject (optional)",
+    "scan.subjectPlaceholder": "German, Math…",
+    "scan.contextLabel": "Details (optional)",
+    "scan.contextPlaceholder": "Chapter, instructions…",
+    "scan.generate": "Generate the set",
+    "scan.removePage": "Remove this page",
+    "scan.pageAlt": "Page {n}",
+    "scan.errNoPhoto": "Add at least one photo first.",
+    "scan.statusScanningOne": "Blitz is scanning your photo…",
+    "scan.statusScanningMany": "Blitz is scanning your pages…",
+    "scan.statusDone": "Set generated, take a look!",
+    "scan.previewSummary": "{cards} cards · {quiz} quiz questions · {writing} writing exercise(s) · {fillBlank} fill-in-the-blank(s)",
+    "scan.accept": "Add to the room",
+    "scan.discard": "Cancel",
+    "common.backRoom": "← Back to the room",
+    "common.backTraining": "← Back to training",
+    "common.retry": "Play again →",
+    "common.nextRound": "Next round →",
+    "common.loading": "Loading…",
+    "common.errServer": "Couldn't reach the server, try again later.",
+    "cards.prev": "← Previous",
+    "cards.next": "Next →",
+    "cards.markLearned": "Mark as learned",
+    "cards.markedLearned": "Card learned ✓",
+    "cards.bossBattle": "⚔ Boss Battle",
+    "cards.writingBtn": "✏ Writing",
+    "cards.flipAria": "Flip the card",
+    "quiz.titleSet": "BOSS BATTLE",
+    "quiz.titleSubject": "GIANT BOSS",
+    "quiz.answerPlaceholder": "Your answer…",
+    "quiz.comboLabel": "COMBO x{combo}",
+    "common.validate": "Confirm",
+    "quiz.powerUpActive": "⚡ POWER-UP ACTIVE",
+    "quiz.feedbackCrit": "⚡ Critical hit!",
+    "quiz.feedbackGood": "Hit landed!",
+    "quiz.feedbackComboSuffix": "Combo x{combo} 🔥",
+    "quiz.feedbackBad": "Missed! Combo reset.",
+    "quiz.resultWin": "BOSS DEFEATED",
+    "quiz.resultLose": "ROUND OVER",
+    "quiz.scoreCombo": "Score: {score}% · Max combo x{combo}",
+    "quiz.tableScore": "Score",
+    "quiz.tableCombo": "Combo",
+    "quiz.tableDate": "Date",
+    "survival.title": "SURVIVAL MODE — {subject}",
+    "survival.streakOngoing": "Current streak: x{streak}",
+    "survival.alive": "Still alive! Streak x{streak} 🔥",
+    "survival.eliminated": "Eliminated! Final streak: x{streak}",
+    "survival.newRecord": " — New record!",
+    "match.title": "MATCHING — {subject}",
+    "match.tagline": "Match each term to its translation, as fast as you can!",
+    "match.done": "ALL MATCHED!",
+    "match.time": "Time: {time}s",
+    "match.newRecordSuffix": " — New record!",
+    "match.recordSuffix": " (record: {record}s)",
+    "tf.title": "TRUE OR FALSE — {subject}",
+    "tf.progress": "Question {index}/{total} · Score: {score}",
+    "tf.true": "✓ TRUE",
+    "tf.false": "✕ FALSE",
+    "tf.good": "Well played!",
+    "tf.bad": "Missed, it was {answer}.",
+    "tf.resultTitle": "ROUND OVER",
+    "tf.resultScore": "Score: {score}/{total}",
+    "fb.title": "FILL IN THE BLANK — {subject}",
+    "fb.progress": "Question {index}/{total} · Score: {score}",
+    "fb.good": "Correct!",
+    "fb.bad": 'Missed, the answer was "{answer}".',
+    "fb.resultTitle": "ROUND OVER",
+    "fb.resultScore": "Score: {score}/{total}",
+    "dict.title": "DICTATION — {subject}",
+    "dict.progress": "Question {index}/{total} · Score: {score}",
+    "dict.tagline": "Listen and write down what you hear.",
+    "dict.listen": "🔊 Listen",
+    "dict.placeholder": "What you heard…",
+    "dict.good": "Correct!",
+    "dict.bad": 'Missed, it was "{answer}".',
+    "dict.resultTitle": "ROUND OVER",
+    "dict.resultScore": "Score: {score}/{total}",
+    "writing.title": "WRITING EXERCISE",
+    "writing.placeholder": "Write your answer here…",
+    "writing.correct": "Check",
+    "writing.correcting": "Blitz is checking your answer…",
+    "writing.correctionLabel": "Correction: {text}",
+    "writing.nextExercise": "Next exercise →",
+    "training.subtitle": "{cards} cards · {quiz} quiz questions",
+    "training.boss": "⚔ Giant boss",
+    "training.survival": "🛡 Survival mode",
+    "training.match": "🧩 Matching",
+    "training.truefalse": "⚡ Lightning true/false",
+    "training.fillblank": "✏ Fill in the blank",
+    "training.dictation": "🎧 Dictation",
+    "training.leaderboard": "🏅 Leaderboard",
+    "ach.title": "🏆 TROPHIES",
+    "ach.first_set": "First cabinet created",
+    "ach.first_clear": "First level cleared",
+    "ach.five_clear": "5 sets cleared",
+    "ach.streak_7": "Combo x7 streak",
+    "ach.boss_slayer": "Boss defeated at 100%",
+    "ach.survivor_10": "Survival x10",
+    "ach.polyglot": "3 different subjects",
+    "lb.title": "LEADERBOARD — {subject}",
+    "lb.loading": "Loading…",
+    "lb.headerRank": "#",
+    "lb.headerPlayer": "Player",
+    "lb.headerScore": "Score",
+    "lb.headerCombo": "Combo",
+    "lb.empty": "No one yet, be the first!",
+    "lb.error": "Couldn't load the leaderboard.",
+    "lb.anonymous": "Anonymous",
+    "topbar.trophies": "Trophies",
+    "topbar.sound": "Sound",
+    "topbar.signOut": "Sign out",
+    "topbar.language": "Language",
+  },
+};
+
+function detectBrowserLang() {
+  const l = (navigator.language || LANG_DEFAULT).slice(0, 2).toLowerCase();
+  return LANGUAGES.some((x) => x.code === l) ? l : LANG_DEFAULT;
+}
+
+function currentLang() {
+  if (state.doc && state.doc.profile && state.doc.profile.language) {
+    return state.doc.profile.language;
+  }
+  return detectBrowserLang();
+}
+
+function t(key, vars) {
+  const lang = currentLang();
+  let str = (STRINGS[lang] && STRINGS[lang][key]) ?? STRINGS[LANG_DEFAULT][key] ?? key;
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) str = str.split(`{${k}}`).join(v);
+  }
+  return str;
+}
+
 function subjectHue(subject) {
   let h = 0;
   for (const ch of String(subject || "")) h = (h * 31 + ch.charCodeAt(0)) % 360;
@@ -670,7 +1100,7 @@ function spawnParticles(container) {
 }
 
 const views = [
-  "loading", "config", "auth", "room", "scan", "cards", "quiz", "writing", "results",
+  "loading", "config", "auth", "language", "room", "scan", "cards", "quiz", "writing", "results",
   "training", "match", "truefalse", "fillblank", "dictation", "survival", "leaderboard", "achievements",
 ];
 function setView(name) {
@@ -726,7 +1156,7 @@ async function init() {
       await signInWithPopup(state.auth, new GoogleAuthProvider());
     } catch (err) {
       console.error("signIn failed", err);
-      errEl.textContent = "Connexion impossible, réessaie.";
+      errEl.textContent = t("auth.error");
       errEl.hidden = false;
     }
   });
@@ -770,7 +1200,9 @@ async function init() {
     setView("achievements");
     renderAchievements();
   });
+  document.getElementById("language-btn").addEventListener("click", openLanguagePicker);
 
+  applyStaticTranslations();
   onAuthStateChanged(state.auth, onAuthChanged);
 }
 
@@ -778,14 +1210,20 @@ async function onAuthChanged(user) {
   state.user = user;
   if (!user) {
     state.doc = null;
+    applyStaticTranslations();
     setView("auth");
     return;
   }
   setView("loading");
   await loadUserDoc();
   applyStreak();
+  applyStaticTranslations();
   renderSoundToggle();
   renderComboReadout();
+  if (!state.doc.profile.language) {
+    openLanguagePicker();
+    return;
+  }
   setView("room");
   renderRoom();
 }
@@ -872,6 +1310,70 @@ function renderSoundToggle() {
   btn.setAttribute("aria-pressed", String(on));
 }
 
+/* ---------------- Static translations (one-time HTML shell) ---------------- */
+function applyStaticTranslations() {
+  document.getElementById("config-title").textContent = t("config.title");
+  document.getElementById("config-body").innerHTML = t("config.body");
+  document.getElementById("auth-tagline").textContent = t("auth.tagline");
+  document.getElementById("signin-btn").textContent = t("auth.signIn");
+  document.getElementById("room-title").textContent = t("room.title");
+  document.getElementById("new-set-btn").textContent = t("room.newSet");
+  document.getElementById("scan-title").textContent = t("scan.title");
+  document.getElementById("scan-tagline").textContent = t("scan.tagline");
+  document.getElementById("scan-file-label").textContent = t("scan.photoLabel");
+  document.getElementById("scan-subject-label").textContent = t("scan.subjectLabel");
+  document.getElementById("scan-subject").placeholder = t("scan.subjectPlaceholder");
+  document.getElementById("scan-context-label").textContent = t("scan.contextLabel");
+  document.getElementById("scan-context").placeholder = t("scan.contextPlaceholder");
+  document.getElementById("scan-generate-btn").textContent = t("scan.generate");
+
+  const backRoomIds = ["scan-back-btn", "cards-back-btn", "quiz-back-btn", "writing-back-btn", "training-back-btn", "achievements-back-btn"];
+  backRoomIds.forEach((id) => { document.getElementById(id).textContent = t("common.backRoom"); });
+  const backTrainingIds = ["match-back-btn", "truefalse-back-btn", "fillblank-back-btn", "dictation-back-btn", "survival-back-btn", "leaderboard-back-btn"];
+  backTrainingIds.forEach((id) => { document.getElementById(id).textContent = t("common.backTraining"); });
+
+  document.getElementById("language-btn").title = t("topbar.language");
+  document.getElementById("achievements-btn").title = t("topbar.trophies");
+  document.getElementById("sound-toggle").title = t("topbar.sound");
+  document.getElementById("signout-btn").title = t("topbar.signOut");
+}
+
+/* ---------------- Language picker ---------------- */
+function openLanguagePicker() {
+  renderLanguagePicker();
+  setView("language");
+}
+
+function renderLanguagePicker() {
+  const container = document.getElementById("language-content");
+  const hasLanguage = !!(state.doc && state.doc.profile && state.doc.profile.language);
+  container.innerHTML = `
+    <svg class="mascot" viewBox="0 0 100 100" aria-hidden="true"><use href="#blitz-mascot"></use></svg>
+    <h2 class="marquee" style="font-size:1.3rem;color:var(--accent)">${esc(t("language.title"))}</h2>
+    <p class="muted">${esc(t("language.subtitle"))}</p>
+    <div class="card-controls" style="flex-direction:column;align-items:stretch;max-width:280px;margin:16px auto 0">
+      ${LANGUAGES.map((l) => `<button class="btn btn-secondary lang-choice" data-code="${l.code}" type="button">${l.flag} ${esc(l.label)}</button>`).join("")}
+    </div>
+    ${hasLanguage ? `<button class="btn btn-ghost" id="language-cancel-btn" type="button" style="margin-top:16px">${esc(t("common.backRoom"))}</button>` : ""}
+  `;
+  container.querySelectorAll(".lang-choice").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      state.doc.profile.language = btn.dataset.code;
+      await persistDoc();
+      applyStaticTranslations();
+      setView("room");
+      renderRoom();
+    });
+  });
+  const cancelBtn = document.getElementById("language-cancel-btn");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      setView("room");
+      renderRoom();
+    });
+  }
+}
+
 /* ---------------- Room ---------------- */
 function renderRoom() {
   const container = document.getElementById("room-content");
@@ -880,7 +1382,7 @@ function renderRoom() {
     container.innerHTML = `
       <div class="empty-state">
         <svg class="mascot" viewBox="0 0 100 100" aria-hidden="true"><use href="#blitz-mascot"></use></svg>
-        <p><strong>La salle est vide, viens scanner ta première fiche !</strong></p>
+        <p><strong>${esc(t("room.empty"))}</strong></p>
       </div>`;
     return;
   }
@@ -895,8 +1397,8 @@ function renderRoom() {
       ([subject, subjectSets]) => `
     <div class="subject-group">
       <div class="subject-group-header">
-        <h3>${esc(subject)} ${subject === bossSubject ? '<span class="weekly-boss-badge">⚡ BOSS DE LA SEMAINE</span>' : ""}</h3>
-        <button class="btn btn-secondary train-btn" data-subject="${esc(subject)}" type="button">S'entraîner sur ${esc(subject)} →</button>
+        <h3>${esc(subject)} ${subject === bossSubject ? `<span class="weekly-boss-badge">${esc(t("room.weeklyBoss"))}</span>` : ""}</h3>
+        <button class="btn btn-secondary train-btn" data-subject="${esc(subject)}" type="button">${esc(t("room.trainSubject", { subject }))}</button>
       </div>
       <div class="arcade-room">${subjectSets.map(cabinetHtml).join("")}</div>
     </div>`
@@ -929,10 +1431,10 @@ function cabinetHtml(set) {
       <div class="marquee" style="filter:hue-rotate(${-hue}deg)">${esc(set.title)}</div>
       <div class="cabinet-body" style="filter:hue-rotate(${-hue}deg)">
         <span class="badge">${esc(set.subject)}</span>
-        <h3>${learned}/${total} fiches sues</h3>
+        <h3>${esc(t("room.cardsLearned", { learned, total }))}</h3>
       </div>
       <div class="led-row">${leds}</div>
-      ${set.completed ? '<div class="stamp--cleared" style="filter:hue-rotate(0)">LEVEL CLEARED</div>' : ""}
+      ${set.completed ? `<div class="stamp--cleared" style="filter:hue-rotate(0)">${esc(t("room.levelCleared"))}</div>` : ""}
     </div>`;
 }
 
@@ -961,20 +1463,20 @@ function renderTraining(subject) {
   const fbCount = subjectPool(subject, "fillBlank").length;
   container.innerHTML = `
     <h2 class="marquee" style="font-size:1.2rem;color:var(--accent)">${esc(subject)}</h2>
-    <p class="muted">${cardCount} fiches · ${quizCount} questions de quiz</p>
+    <p class="muted">${esc(t("training.subtitle", { cards: cardCount, quiz: quizCount }))}</p>
     <div class="card-controls">
-      <button class="btn btn-primary" id="train-boss-btn" type="button" ${quizCount ? "" : "disabled"}>⚔ Boss géant</button>
-      <button class="btn btn-secondary" id="train-survival-btn" type="button" ${quizCount ? "" : "disabled"}>🛡 Mode Survie</button>
+      <button class="btn btn-primary" id="train-boss-btn" type="button" ${quizCount ? "" : "disabled"}>${esc(t("training.boss"))}</button>
+      <button class="btn btn-secondary" id="train-survival-btn" type="button" ${quizCount ? "" : "disabled"}>${esc(t("training.survival"))}</button>
     </div>
     <div class="card-controls">
-      <button class="btn btn-secondary" id="train-match-btn" type="button" ${cardCount >= 2 ? "" : "disabled"}>🧩 Association</button>
-      <button class="btn btn-secondary" id="train-truefalse-btn" type="button" ${quizCount ? "" : "disabled"}>⚡ Vrai/Faux éclair</button>
+      <button class="btn btn-secondary" id="train-match-btn" type="button" ${cardCount >= 2 ? "" : "disabled"}>${esc(t("training.match"))}</button>
+      <button class="btn btn-secondary" id="train-truefalse-btn" type="button" ${quizCount ? "" : "disabled"}>${esc(t("training.truefalse"))}</button>
     </div>
     <div class="card-controls">
-      <button class="btn btn-secondary" id="train-fillblank-btn" type="button" ${fbCount ? "" : "disabled"}>✏ Texte à trous</button>
-      <button class="btn btn-secondary" id="train-dictation-btn" type="button" ${cardCount ? "" : "disabled"}>🎧 Dictée</button>
+      <button class="btn btn-secondary" id="train-fillblank-btn" type="button" ${fbCount ? "" : "disabled"}>${esc(t("training.fillblank"))}</button>
+      <button class="btn btn-secondary" id="train-dictation-btn" type="button" ${cardCount ? "" : "disabled"}>${esc(t("training.dictation"))}</button>
     </div>
-    <button class="btn btn-ghost" id="train-leaderboard-btn" type="button" style="margin-top:12px">🏅 Classement</button>
+    <button class="btn btn-ghost" id="train-leaderboard-btn" type="button" style="margin-top:12px">${esc(t("training.leaderboard"))}</button>
   `;
   document.getElementById("train-boss-btn").addEventListener("click", () => startSubjectBoss(subject));
   document.getElementById("train-survival-btn").addEventListener("click", () => startSurvival(subject));
@@ -1007,8 +1509,8 @@ function renderScanThumbs() {
     .map(
       (img, i) => `
     <div class="photo-thumb">
-      <img src="${img.dataUrl}" alt="Page ${i + 1}" />
-      <button class="remove-photo" type="button" data-index="${i}" aria-label="Retirer cette page">✕</button>
+      <img src="${img.dataUrl}" alt="${esc(t("scan.pageAlt", { n: i + 1 }))}" />
+      <button class="remove-photo" type="button" data-index="${i}" aria-label="${esc(t("scan.removePage"))}">✕</button>
     </div>`
     )
     .join("");
@@ -1027,14 +1529,14 @@ async function onGenerateSet() {
   errEl.hidden = true;
 
   if (state.scanImages.length === 0) {
-    errEl.textContent = "Ajoute au moins une photo d'abord.";
+    errEl.textContent = t("scan.errNoPhoto");
     errEl.hidden = false;
     return;
   }
 
   genBtn.disabled = true;
   statusEl.hidden = false;
-  statusEl.textContent = state.scanImages.length > 1 ? "Blitz scanne tes pages…" : "Blitz scanne ta photo…";
+  statusEl.textContent = state.scanImages.length > 1 ? t("scan.statusScanningMany") : t("scan.statusScanningOne");
 
   try {
     const token = await state.user.getIdToken();
@@ -1045,17 +1547,18 @@ async function onGenerateSet() {
         images: state.scanImages.map((img) => ({ data: img.dataUrl, mimeType: img.mimeType })),
         subject: document.getElementById("scan-subject").value.trim(),
         context: document.getElementById("scan-context").value.trim(),
+        language: currentLang(),
       }),
     });
     const payload = await res.json().catch(() => null);
     if (!res.ok || !payload || !payload.ok) {
-      throw new Error((payload && payload.msg) || "Échec de génération.");
+      throw new Error((payload && payload.msg) || t("common.errServer"));
     }
     renderScanPreview(payload.data);
-    statusEl.textContent = "Set généré, jette un œil !";
+    statusEl.textContent = t("scan.statusDone");
   } catch (err) {
     console.error("generateSet failed", err);
-    errEl.textContent = "Impossible de contacter le serveur, réessaie plus tard.";
+    errEl.textContent = t("common.errServer");
     errEl.hidden = false;
     statusEl.hidden = true;
   } finally {
@@ -1068,9 +1571,9 @@ function renderScanPreview(data) {
   container.innerHTML = `
     <div class="panel" style="margin-top:16px;max-width:560px">
       <h3>${esc(data.title)} <span class="badge">${esc(data.subject)}</span></h3>
-      <p class="muted">${data.cards.length} fiches · ${data.quiz.length} questions de quiz · ${data.writing.length} exercice(s) d'écriture · ${data.fillBlank.length} texte(s) à trous</p>
-      <button class="btn btn-primary" id="accept-set-btn" type="button">Ajouter à la salle</button>
-      <button class="btn btn-ghost" id="discard-set-btn" type="button">Annuler</button>
+      <p class="muted">${esc(t("scan.previewSummary", { cards: data.cards.length, quiz: data.quiz.length, writing: data.writing.length, fillBlank: data.fillBlank.length }))}</p>
+      <button class="btn btn-primary" id="accept-set-btn" type="button">${esc(t("scan.accept"))}</button>
+      <button class="btn btn-ghost" id="discard-set-btn" type="button">${esc(t("scan.discard"))}</button>
     </div>`;
   document.getElementById("accept-set-btn").addEventListener("click", async () => {
     await acceptGeneratedSet(data);
@@ -1118,7 +1621,7 @@ function renderCards() {
   container.innerHTML = `
     <span class="badge">${esc(set.subject)}</span>
     <h2 class="marquee" style="font-size:1.2rem">${esc(set.title)}</h2>
-    <div class="flashcard" id="flip-card" tabindex="0" role="button" aria-label="Retourner la carte">
+    <div class="flashcard" id="flip-card" tabindex="0" role="button" aria-label="${esc(t("cards.flipAria"))}">
       <div class="flashcard-inner">
         <div class="flashcard-face flashcard-face--front">${esc(card.front)}</div>
         <div class="flashcard-face flashcard-face--back">${esc(card.back)}</div>
@@ -1127,13 +1630,13 @@ function renderCards() {
     </div>
     <div class="card-progress">${leds}</div>
     <div class="card-controls">
-      <button class="btn btn-ghost" id="prev-card-btn" type="button" ${state.cardIndex === 0 ? "disabled" : ""}>← Précédente</button>
-      <button class="btn btn-secondary" id="mark-learned-btn" type="button">${card.learned ? "Fiche sue ✓" : "Marquer comme sue"}</button>
-      <button class="btn btn-ghost" id="next-card-btn" type="button" ${state.cardIndex === set.cards.length - 1 ? "disabled" : ""}>Suivante →</button>
+      <button class="btn btn-ghost" id="prev-card-btn" type="button" ${state.cardIndex === 0 ? "disabled" : ""}>${esc(t("cards.prev"))}</button>
+      <button class="btn btn-secondary" id="mark-learned-btn" type="button">${card.learned ? esc(t("cards.markedLearned")) : esc(t("cards.markLearned"))}</button>
+      <button class="btn btn-ghost" id="next-card-btn" type="button" ${state.cardIndex === set.cards.length - 1 ? "disabled" : ""}>${esc(t("cards.next"))}</button>
     </div>
     <div class="card-controls">
-      <button class="btn btn-primary" id="start-quiz-btn" type="button">⚔ Boss Battle</button>
-      ${set.writing.length ? '<button class="btn btn-secondary" id="start-writing-btn" type="button">✏ Écriture</button>' : ""}
+      <button class="btn btn-primary" id="start-quiz-btn" type="button">${esc(t("cards.bossBattle"))}</button>
+      ${set.writing.length ? `<button class="btn btn-secondary" id="start-writing-btn" type="button">${esc(t("cards.writingBtn"))}</button>` : ""}
     </div>
   `;
 
@@ -1226,20 +1729,20 @@ function renderQuiz() {
   const container = document.getElementById("quiz-content");
   const hpPct = Math.max(0, (state.quiz.hp / state.quiz.maxHp) * 100);
   const choices = q.choices && q.choices.length ? q.choices : null;
-  const title = state.quiz.scope === "subject" ? "BOSS GÉANT" : "BOSS BATTLE";
+  const title = state.quiz.scope === "subject" ? t("quiz.titleSubject") : t("quiz.titleSet");
 
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">${title}</h2>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">${esc(title)}</h2>
     <div class="boss-hp-shell"><div class="boss-hp-fill" id="boss-hp-fill" style="width:${hpPct}%"></div></div>
-    <div class="combo-bar">COMBO x${state.quiz.combo}${state.quiz.combo >= 5 ? " ⚡ POWER-UP ACTIF" : ""}</div>
+    <div class="combo-bar">${esc(t("quiz.comboLabel", { combo: state.quiz.combo }))}${state.quiz.combo >= 5 ? ` ${esc(t("quiz.powerUpActive"))}` : ""}</div>
     <div class="quiz-question">${esc(q.question)}</div>
     ${
       choices
         ? `<div class="quiz-choices">${choices
             .map((c, i) => `<button class="quiz-choice" data-choice="${i}" type="button">${esc(c)}</button>`)
             .join("")}</div>`
-        : `<div class="field"><input type="text" id="quiz-text-answer" placeholder="Ta réponse…" /></div>
-           <button class="btn btn-primary" id="quiz-submit-text" type="button">Valider</button>`
+        : `<div class="field"><input type="text" id="quiz-text-answer" placeholder="${esc(t("quiz.answerPlaceholder"))}" /></div>
+           <button class="btn btn-primary" id="quiz-submit-text" type="button">${esc(t("common.validate"))}</button>`
     }
     <div id="quiz-feedback"></div>
   `;
@@ -1275,11 +1778,12 @@ function answerQuiz(isCorrect) {
     state.quiz.score += 1;
     hpFill.classList.add(powerUp ? "is-power" : "is-hit");
     playSfx("ding");
-    fb.innerHTML = `<div class="quiz-feedback good">${powerUp ? "⚡ Coup critique !" : "Coup porté !"} Combo x${state.quiz.combo} 🔥</div>`;
+    const hitLabel = powerUp ? t("quiz.feedbackCrit") : t("quiz.feedbackGood");
+    fb.innerHTML = `<div class="quiz-feedback good">${esc(hitLabel)} ${esc(t("quiz.feedbackComboSuffix", { combo: state.quiz.combo }))}</div>`;
   } else {
     state.quiz.combo = 0;
     playSfx("buzz");
-    fb.innerHTML = `<div class="quiz-feedback bad">Raté ! Combo réinitialisé.</div>`;
+    fb.innerHTML = `<div class="quiz-feedback bad">${esc(t("quiz.feedbackBad"))}</div>`;
   }
   setTimeout(() => {
     state.quiz.index += 1;
@@ -1310,17 +1814,17 @@ async function finishQuiz() {
 
   const container = document.getElementById("results-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.3rem;color:var(--reward)">${pct >= 100 ? "BOSS VAINCU" : "MANCHE TERMINÉE"}</h2>
-    <p>Score : ${pct}% · Combo max x${comboMax}</p>
+    <h2 class="marquee" style="font-size:1.3rem;color:var(--reward)">${esc(pct >= 100 ? t("quiz.resultWin") : t("quiz.resultLose"))}</h2>
+    <p>${esc(t("quiz.scoreCombo", { score: pct, combo: comboMax }))}</p>
     <table class="highscore-table">
-      <thead><tr><th>Score</th><th>Combo</th><th>Date</th></tr></thead>
+      <thead><tr><th>${esc(t("quiz.tableScore"))}</th><th>${esc(t("quiz.tableCombo"))}</th><th>${esc(t("quiz.tableDate"))}</th></tr></thead>
       <tbody>${highScores
         .map((e) => `<tr><td class="score">${e.score}%</td><td class="score">x${e.comboMax}</td><td>${esc(e.date)}</td></tr>`)
         .join("")}</tbody>
     </table>
     <div class="card-controls" style="margin-top:16px">
-      <button class="btn btn-primary" id="retry-quiz-btn" type="button">Manche suivante →</button>
-      <button class="btn btn-ghost" id="results-room-btn" type="button">${scope === "subject" ? "Retour à l'entraînement" : "Retour à la salle"}</button>
+      <button class="btn btn-primary" id="retry-quiz-btn" type="button">${esc(t("common.nextRound"))}</button>
+      <button class="btn btn-ghost" id="results-room-btn" type="button">${esc(scope === "subject" ? t("common.backTraining") : t("common.backRoom"))}</button>
     </div>
   `;
   document.getElementById("retry-quiz-btn").addEventListener("click", () => {
@@ -1356,16 +1860,16 @@ function renderSurvival() {
   const container = document.getElementById("survival-content");
   const choices = q.choices && q.choices.length ? q.choices : null;
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">MODE SURVIE — ${esc(s.subject)}</h2>
-    <div class="combo-bar">Série en cours : x${s.streak}</div>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">${esc(t("survival.title", { subject: s.subject }))}</h2>
+    <div class="combo-bar">${esc(t("survival.streakOngoing", { streak: s.streak }))}</div>
     <div class="quiz-question">${esc(q.question)}</div>
     ${
       choices
         ? `<div class="quiz-choices">${choices
             .map((c, i) => `<button class="quiz-choice" data-choice="${i}" type="button">${esc(c)}</button>`)
             .join("")}</div>`
-        : `<div class="field"><input type="text" id="survival-text-answer" placeholder="Ta réponse…" /></div>
-           <button class="btn btn-primary" id="survival-submit-text" type="button">Valider</button>`
+        : `<div class="field"><input type="text" id="survival-text-answer" placeholder="${esc(t("quiz.answerPlaceholder"))}" /></div>
+           <button class="btn btn-primary" id="survival-submit-text" type="button">${esc(t("common.validate"))}</button>`
     }
     <div id="survival-feedback"></div>
   `;
@@ -1391,7 +1895,7 @@ async function answerSurvival(isCorrect) {
   if (isCorrect) {
     state.survival.streak += 1;
     playSfx("ding");
-    fb.innerHTML = `<div class="quiz-feedback good">Toujours en vie ! Série x${state.survival.streak} 🔥</div>`;
+    fb.innerHTML = `<div class="quiz-feedback good">${esc(t("survival.alive", { streak: state.survival.streak }))}</div>`;
     setTimeout(() => {
       state.survival.index += 1;
       renderSurvival();
@@ -1404,10 +1908,10 @@ async function answerSurvival(isCorrect) {
     stats.bestSurvivalRun = best;
     await persistDoc();
     fb.innerHTML = `
-      <div class="quiz-feedback bad">Éliminé ! Série finale : x${state.survival.streak}${isRecord ? " — Nouveau record !" : ""}</div>
+      <div class="quiz-feedback bad">${esc(t("survival.eliminated", { streak: state.survival.streak }))}${isRecord ? esc(t("survival.newRecord")) : ""}</div>
       <div class="card-controls" style="margin-top:12px">
-        <button class="btn btn-primary" id="survival-retry-btn" type="button">Rejouer →</button>
-        <button class="btn btn-ghost" id="survival-training-btn" type="button">Retour à l'entraînement</button>
+        <button class="btn btn-primary" id="survival-retry-btn" type="button">${esc(t("common.retry"))}</button>
+        <button class="btn btn-ghost" id="survival-training-btn" type="button">${esc(t("common.backTraining"))}</button>
       </div>`;
     document.getElementById("survival-retry-btn").addEventListener("click", () => startSurvival(state.survival.subject));
     document.getElementById("survival-training-btn").addEventListener("click", () => openTraining(state.survival.subject));
@@ -1443,8 +1947,8 @@ function renderMatch() {
     return `<button class="match-tile ${isMatched ? "is-matched" : ""} ${isSelected ? "is-selected" : ""}" data-side="${side}" data-id="${id}" type="button" ${isMatched ? "disabled" : ""}>${esc(label)}</button>`;
   };
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">ASSOCIATION — ${esc(m.subject)}</h2>
-    <p class="muted">Relie chaque terme à sa traduction, le plus vite possible !</p>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">${esc(t("match.title", { subject: m.subject }))}</h2>
+    <p class="muted">${esc(t("match.tagline"))}</p>
     <div class="match-board">
       <div>${m.leftOrder.map((id) => tile(id, "left", byId[id].front)).join("")}</div>
       <div>${m.rightOrder.map((id) => tile(id, "right", byId[id].back)).join("")}</div>
@@ -1504,11 +2008,11 @@ async function finishMatch() {
   playSfx("levelup");
   const container = document.getElementById("match-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">TOUT ASSOCIÉ !</h2>
-    <p>Temps : ${(elapsedMs / 1000).toFixed(1)}s ${isRecord ? "— Nouveau record !" : `(record : ${(stats.bestMatchMs / 1000).toFixed(1)}s)`}</p>
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">${esc(t("match.done"))}</h2>
+    <p>${esc(t("match.time", { time: (elapsedMs / 1000).toFixed(1) }))}${isRecord ? esc(t("match.newRecordSuffix")) : esc(t("match.recordSuffix", { record: (stats.bestMatchMs / 1000).toFixed(1) }))}</p>
     <div class="card-controls" style="margin-top:16px">
-      <button class="btn btn-primary" id="match-retry-btn" type="button">Rejouer →</button>
-      <button class="btn btn-ghost" id="match-training-btn" type="button">Retour à l'entraînement</button>
+      <button class="btn btn-primary" id="match-retry-btn" type="button">${esc(t("common.retry"))}</button>
+      <button class="btn btn-ghost" id="match-training-btn" type="button">${esc(t("common.backTraining"))}</button>
     </div>
   `;
   document.getElementById("match-retry-btn").addEventListener("click", () => startMatch(state.match.subject));
@@ -1549,12 +2053,12 @@ function renderTrueFalse() {
   const round = tf.rounds[tf.index];
   const container = document.getElementById("truefalse-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">VRAI OU FAUX — ${esc(tf.subject)}</h2>
-    <p class="muted">Question ${tf.index + 1}/${tf.rounds.length} · Score : ${tf.score}</p>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">${esc(t("tf.title", { subject: tf.subject }))}</h2>
+    <p class="muted">${esc(t("tf.progress", { index: tf.index + 1, total: tf.rounds.length, score: tf.score }))}</p>
     <div class="quiz-question">${esc(round.question)} → <strong>${esc(round.shownAnswer)}</strong></div>
     <div class="truefalse-choices">
-      <button class="btn btn-primary" id="tf-true-btn" type="button">✓ VRAI</button>
-      <button class="btn btn-secondary" id="tf-false-btn" type="button">✕ FAUX</button>
+      <button class="btn btn-primary" id="tf-true-btn" type="button">${esc(t("tf.true"))}</button>
+      <button class="btn btn-secondary" id="tf-false-btn" type="button">${esc(t("tf.false"))}</button>
     </div>
     <div id="truefalse-feedback"></div>
   `;
@@ -1570,10 +2074,10 @@ function answerTrueFalse(guessTrue) {
   if (isCorrect) {
     tf.score += 1;
     playSfx("ding");
-    fb.innerHTML = `<div class="quiz-feedback good">Bien joué !</div>`;
+    fb.innerHTML = `<div class="quiz-feedback good">${esc(t("tf.good"))}</div>`;
   } else {
     playSfx("buzz");
-    fb.innerHTML = `<div class="quiz-feedback bad">Raté, c'était ${round.isTrue ? "VRAI" : "FAUX"}.</div>`;
+    fb.innerHTML = `<div class="quiz-feedback bad">${esc(t("tf.bad", { answer: round.isTrue ? t("tf.true") : t("tf.false") }))}</div>`;
   }
   setTimeout(() => {
     tf.index += 1;
@@ -1586,11 +2090,11 @@ function finishTrueFalse() {
   const tf = state.truefalse;
   const container = document.getElementById("truefalse-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">MANCHE TERMINÉE</h2>
-    <p>Score : ${tf.score}/${tf.rounds.length}</p>
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">${esc(t("tf.resultTitle"))}</h2>
+    <p>${esc(t("tf.resultScore", { score: tf.score, total: tf.rounds.length }))}</p>
     <div class="card-controls" style="margin-top:16px">
-      <button class="btn btn-primary" id="tf-retry-btn" type="button">Rejouer →</button>
-      <button class="btn btn-ghost" id="tf-training-btn" type="button">Retour à l'entraînement</button>
+      <button class="btn btn-primary" id="tf-retry-btn" type="button">${esc(t("common.retry"))}</button>
+      <button class="btn btn-ghost" id="tf-training-btn" type="button">${esc(t("common.backTraining"))}</button>
     </div>
   `;
   document.getElementById("tf-retry-btn").addEventListener("click", () => startTrueFalse(tf.subject));
@@ -1612,10 +2116,10 @@ function renderFillBlank() {
   const container = document.getElementById("fillblank-content");
   const [before, after] = item.text.split("___");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">TEXTE À TROUS — ${esc(fb.subject)}</h2>
-    <p class="muted">Question ${fb.index + 1}/${fb.pool.length} · Score : ${fb.score}</p>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">${esc(t("fb.title", { subject: fb.subject }))}</h2>
+    <p class="muted">${esc(t("fb.progress", { index: fb.index + 1, total: fb.pool.length, score: fb.score }))}</p>
     <div class="fillblank-sentence">${esc(before || "")}<input type="text" id="fillblank-answer" autocomplete="off" />${esc(after || "")}</div>
-    <button class="btn btn-primary" id="fillblank-submit-btn" type="button">Valider</button>
+    <button class="btn btn-primary" id="fillblank-submit-btn" type="button">${esc(t("common.validate"))}</button>
     <div id="fillblank-feedback"></div>
   `;
   const submit = () => {
@@ -1635,10 +2139,10 @@ function answerFillBlank(isCorrect, correctAnswer) {
   if (isCorrect) {
     fb.score += 1;
     playSfx("ding");
-    el.innerHTML = `<div class="quiz-feedback good">Exact !</div>`;
+    el.innerHTML = `<div class="quiz-feedback good">${esc(t("fb.good"))}</div>`;
   } else {
     playSfx("buzz");
-    el.innerHTML = `<div class="quiz-feedback bad">Raté, la réponse était « ${esc(correctAnswer)} ».</div>`;
+    el.innerHTML = `<div class="quiz-feedback bad">${esc(t("fb.bad", { answer: correctAnswer }))}</div>`;
   }
   setTimeout(() => {
     fb.index += 1;
@@ -1651,11 +2155,11 @@ function finishFillBlank() {
   const fb = state.fillblank;
   const container = document.getElementById("fillblank-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">MANCHE TERMINÉE</h2>
-    <p>Score : ${fb.score}/${fb.pool.length}</p>
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">${esc(t("fb.resultTitle"))}</h2>
+    <p>${esc(t("fb.resultScore", { score: fb.score, total: fb.pool.length }))}</p>
     <div class="card-controls" style="margin-top:16px">
-      <button class="btn btn-primary" id="fb-retry-btn" type="button">Rejouer →</button>
-      <button class="btn btn-ghost" id="fb-training-btn" type="button">Retour à l'entraînement</button>
+      <button class="btn btn-primary" id="fb-retry-btn" type="button">${esc(t("common.retry"))}</button>
+      <button class="btn btn-ghost" id="fb-training-btn" type="button">${esc(t("common.backTraining"))}</button>
     </div>
   `;
   document.getElementById("fb-retry-btn").addEventListener("click", () => startFillBlank(fb.subject));
@@ -1676,14 +2180,14 @@ function renderDictation() {
   const item = d.cards[d.index];
   const container = document.getElementById("dictation-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">DICTÉE — ${esc(d.subject)}</h2>
-    <p class="muted">Question ${d.index + 1}/${d.cards.length} · Score : ${d.score}</p>
-    <p class="muted">Écoute et écris ce que tu entends.</p>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">${esc(t("dict.title", { subject: d.subject }))}</h2>
+    <p class="muted">${esc(t("dict.progress", { index: d.index + 1, total: d.cards.length, score: d.score }))}</p>
+    <p class="muted">${esc(t("dict.tagline"))}</p>
     <div class="dictation-controls">
-      <button class="btn btn-secondary" id="dictation-listen-btn" type="button">🔊 Écouter</button>
-      <input type="text" id="dictation-answer" autocomplete="off" placeholder="Ce que tu as entendu…" />
+      <button class="btn btn-secondary" id="dictation-listen-btn" type="button">${esc(t("dict.listen"))}</button>
+      <input type="text" id="dictation-answer" autocomplete="off" placeholder="${esc(t("dict.placeholder"))}" />
     </div>
-    <button class="btn btn-primary" id="dictation-submit-btn" type="button">Valider</button>
+    <button class="btn btn-primary" id="dictation-submit-btn" type="button">${esc(t("common.validate"))}</button>
     <div id="dictation-feedback"></div>
   `;
   const listen = () => speakText(item.front, d.subject);
@@ -1705,10 +2209,10 @@ function answerDictation(isCorrect, correctAnswer) {
   if (isCorrect) {
     d.score += 1;
     playSfx("ding");
-    el.innerHTML = `<div class="quiz-feedback good">Exact !</div>`;
+    el.innerHTML = `<div class="quiz-feedback good">${esc(t("dict.good"))}</div>`;
   } else {
     playSfx("buzz");
-    el.innerHTML = `<div class="quiz-feedback bad">Raté, c'était « ${esc(correctAnswer)} ».</div>`;
+    el.innerHTML = `<div class="quiz-feedback bad">${esc(t("dict.bad", { answer: correctAnswer }))}</div>`;
   }
   window.speechSynthesis && window.speechSynthesis.cancel();
   setTimeout(() => {
@@ -1722,11 +2226,11 @@ function finishDictation() {
   const d = state.dictation;
   const container = document.getElementById("dictation-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">MANCHE TERMINÉE</h2>
-    <p>Score : ${d.score}/${d.cards.length}</p>
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">${esc(t("dict.resultTitle"))}</h2>
+    <p>${esc(t("dict.resultScore", { score: d.score, total: d.cards.length }))}</p>
     <div class="card-controls" style="margin-top:16px">
-      <button class="btn btn-primary" id="dict-retry-btn" type="button">Rejouer →</button>
-      <button class="btn btn-ghost" id="dict-training-btn" type="button">Retour à l'entraînement</button>
+      <button class="btn btn-primary" id="dict-retry-btn" type="button">${esc(t("common.retry"))}</button>
+      <button class="btn btn-ghost" id="dict-training-btn" type="button">${esc(t("common.backTraining"))}</button>
     </div>
   `;
   document.getElementById("dict-retry-btn").addEventListener("click", () => startDictation(d.subject));
@@ -1745,11 +2249,11 @@ function renderWriting(index) {
   const item = set.writing[index];
   const container = document.getElementById("writing-content");
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">EXERCICE D'ÉCRITURE</h2>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">${esc(t("writing.title"))}</h2>
     <p>${esc(item.prompt)}</p>
-    <textarea class="answer-box" id="writing-answer" placeholder="Écris ta réponse ici…"></textarea>
+    <textarea class="answer-box" id="writing-answer" placeholder="${esc(t("writing.placeholder"))}"></textarea>
     <div class="card-controls" style="margin-top:12px">
-      <button class="btn btn-primary" id="writing-submit-btn" type="button">Corriger</button>
+      <button class="btn btn-primary" id="writing-submit-btn" type="button">${esc(t("writing.correct"))}</button>
     </div>
     <div id="writing-result"></div>
   `;
@@ -1764,28 +2268,28 @@ async function submitWriting(item, index, set) {
   const answerText = document.getElementById("writing-answer").value.trim();
   if (!answerText) return;
   btn.disabled = true;
-  resultEl.innerHTML = `<p class="muted">Blitz corrige ta réponse…</p>`;
+  resultEl.innerHTML = `<p class="muted">${esc(t("writing.correcting"))}</p>`;
   try {
     const token = await state.user.getIdToken();
     const res = await fetch("/api/checkWriting", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ answerText, referenceAnswer: item.referenceAnswer, prompt: item.prompt }),
+      body: JSON.stringify({ answerText, referenceAnswer: item.referenceAnswer, prompt: item.prompt, language: currentLang() }),
     });
     const payload = await res.json().catch(() => null);
     if (!res.ok || !payload || !payload.ok) {
-      throw new Error((payload && payload.msg) || "Échec de correction.");
+      throw new Error((payload && payload.msg) || t("common.errServer"));
     }
     const { correct, score, feedback, corrections } = payload.data;
     playSfx(correct ? "ding" : "buzz");
     resultEl.innerHTML = `
       <span class="score-pill ${correct ? "good" : "bad"}">${score}/100</span>
       <p>${esc(feedback)}</p>
-      ${corrections ? `<p class="muted">Correction : ${esc(corrections)}</p>` : ""}
+      ${corrections ? `<p class="muted">${esc(t("writing.correctionLabel", { text: corrections }))}</p>` : ""}
       ${
         index + 1 < set.writing.length
-          ? '<button class="btn btn-secondary" id="writing-next-btn" type="button">Exercice suivant →</button>'
-          : '<button class="btn btn-ghost" id="writing-room-btn" type="button">Retour à la salle</button>'
+          ? `<button class="btn btn-secondary" id="writing-next-btn" type="button">${esc(t("writing.nextExercise"))}</button>`
+          : `<button class="btn btn-ghost" id="writing-room-btn" type="button">${esc(t("common.backRoom"))}</button>`
       }
     `;
     const nextBtn = document.getElementById("writing-next-btn");
@@ -1794,7 +2298,7 @@ async function submitWriting(item, index, set) {
     if (roomBtn) roomBtn.addEventListener("click", () => { setView("room"); renderRoom(); });
   } catch (err) {
     console.error("checkWriting failed", err);
-    resultEl.innerHTML = `<p class="error-banner">Impossible de contacter le serveur, réessaie plus tard.</p>`;
+    resultEl.innerHTML = `<p class="error-banner">${esc(t("common.errServer"))}</p>`;
   } finally {
     btn.disabled = false;
   }
@@ -1813,13 +2317,13 @@ function computeAchievements() {
   const bestSurvival = subjectStatsList.reduce((max, st) => Math.max(max, st.bestSurvivalRun || 0), 0);
 
   return [
-    { id: "first_set", label: "Première borne créée", icon: "📇", earned: sets.length >= 1 },
-    { id: "first_clear", label: "Premier level cleared", icon: "🏁", earned: completedCount >= 1 },
-    { id: "five_clear", label: "5 sets nettoyés", icon: "🧹", earned: completedCount >= 5 },
-    { id: "streak_7", label: "Combo x7 en streak", icon: "🔥", earned: bestStreak >= 7 },
-    { id: "boss_slayer", label: "Boss vaincu à 100%", icon: "⚔️", earned: bossWon },
-    { id: "survivor_10", label: "Survie x10", icon: "🛡️", earned: bestSurvival >= 10 },
-    { id: "polyglot", label: "3 matières différentes", icon: "🌍", earned: subjects.size >= 3 },
+    { id: "first_set", label: t("ach.first_set"), icon: "📇", earned: sets.length >= 1 },
+    { id: "first_clear", label: t("ach.first_clear"), icon: "🏁", earned: completedCount >= 1 },
+    { id: "five_clear", label: t("ach.five_clear"), icon: "🧹", earned: completedCount >= 5 },
+    { id: "streak_7", label: t("ach.streak_7"), icon: "🔥", earned: bestStreak >= 7 },
+    { id: "boss_slayer", label: t("ach.boss_slayer"), icon: "⚔️", earned: bossWon },
+    { id: "survivor_10", label: t("ach.survivor_10"), icon: "🛡️", earned: bestSurvival >= 10 },
+    { id: "polyglot", label: t("ach.polyglot"), icon: "🌍", earned: subjects.size >= 3 },
   ];
 }
 
@@ -1827,7 +2331,7 @@ function renderAchievements() {
   const container = document.getElementById("achievements-content");
   const achievements = computeAchievements();
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.3rem;color:var(--reward)">🏆 TROPHÉES</h2>
+    <h2 class="marquee" style="font-size:1.3rem;color:var(--reward)">${esc(t("ach.title"))}</h2>
     <div class="achievements-grid">
       ${achievements
         .map(
@@ -1851,7 +2355,7 @@ async function upsertLeaderboard(subject, score, comboMax) {
     const prevCombo = snap.exists() ? snap.data().bestComboMax || 0 : 0;
     if (score >= prevScore) {
       await setDoc(ref, {
-        displayName: state.user.displayName || "Anonyme",
+        displayName: state.user.displayName || t("lb.anonymous"),
         bestScore: score,
         bestComboMax: Math.max(comboMax, prevCombo),
         updatedAt: todayKey(),
@@ -1869,16 +2373,17 @@ function openLeaderboard(subject) {
 
 async function renderLeaderboard(subject) {
   const container = document.getElementById("leaderboard-content");
-  container.innerHTML = `<h2 class="marquee" style="font-size:1.1rem;color:var(--reward)">CLASSEMENT — ${esc(subject)}</h2><p class="muted">Chargement…</p>`;
+  const title = `<h2 class="marquee" style="font-size:1.1rem;color:var(--reward)">${esc(t("lb.title", { subject }))}</h2>`;
+  container.innerHTML = `${title}<p class="muted">${esc(t("lb.loading"))}</p>`;
   try {
     const q = query(collection(state.db, "leaderboard", subject, "entries"), orderBy("bestScore", "desc"), limit(10));
     const snap = await getDocs(q);
     const rows = [];
     snap.forEach((d) => rows.push(d.data()));
     container.innerHTML = `
-      <h2 class="marquee" style="font-size:1.1rem;color:var(--reward)">CLASSEMENT — ${esc(subject)}</h2>
+      ${title}
       <table class="highscore-table">
-        <thead><tr><th>#</th><th>Joueur</th><th>Score</th><th>Combo</th></tr></thead>
+        <thead><tr><th>${esc(t("lb.headerRank"))}</th><th>${esc(t("lb.headerPlayer"))}</th><th>${esc(t("lb.headerScore"))}</th><th>${esc(t("lb.headerCombo"))}</th></tr></thead>
         <tbody>${
           rows.length
             ? rows
@@ -1887,13 +2392,13 @@ async function renderLeaderboard(subject) {
                     `<tr><td>${i + 1}</td><td>${esc(r.displayName)}</td><td class="score">${r.bestScore}%</td><td class="score">x${r.bestComboMax || 0}</td></tr>`
                 )
                 .join("")
-            : '<tr><td colspan="4" class="muted">Personne pour l\'instant, sois le premier !</td></tr>'
+            : `<tr><td colspan="4" class="muted">${esc(t("lb.empty"))}</td></tr>`
         }</tbody>
       </table>
     `;
   } catch (err) {
     console.error("leaderboard load failed", err);
-    container.innerHTML = `<p class="error-banner">Impossible de charger le classement.</p>`;
+    container.innerHTML = `<p class="error-banner">${esc(t("lb.error"))}</p>`;
   }
 }
 
