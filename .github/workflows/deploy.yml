@@ -18,7 +18,10 @@ jobs:
         working-directory: functions
         run: npm ci
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
       - name: Deploy to Firebase
-        run: npx firebase-tools deploy --only hosting,functions,firestore:rules --project blitzkarte-50e65 --non-interactive --token "$FIREBASE_TOKEN"
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: npx firebase-tools deploy --only hosting,functions,firestore:rules --project blitzkarte-50e65 --non-interactive
