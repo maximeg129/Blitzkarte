@@ -14,6 +14,8 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_CARDS = 40;
 const MAX_QUIZ_QUESTIONS = 15;
 const MAX_WRITING_PROMPTS = 15;
+const MAX_FILL_BLANK = 15;
+const MAX_IMAGES = 6;
 
 function fail(res, status, msg) {
   res.status(status).json({ ok: false, msg });
@@ -61,15 +63,30 @@ exports.generateSet = onRequest(
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const { imageBase64, mimeType, subject, context } = req.body || {};
-    if (!isNonEmptyString(imageBase64)) {
-      return fail(res, 400, "Image manquante.");
+    const { images, subject, context } = req.body || {};
+    if (!Array.isArray(images) || images.length === 0) {
+      return fail(res, 400, "Au moins une image est requise.");
     }
-    if (!ALLOWED_IMAGE_TYPES.includes(mimeType)) {
-      return fail(res, 400, "Format d'image non supporté.");
+    if (images.length > MAX_IMAGES) {
+      return fail(res, 400, `Trop d'images (max ${MAX_IMAGES}).`);
+    }
+    for (const img of images) {
+      if (!img || !isNonEmptyString(img.data)) {
+        return fail(res, 400, "Image manquante.");
+      }
+      if (!ALLOWED_IMAGE_TYPES.includes(img.mimeType)) {
+        return fail(res, 400, "Format d'image non supporté.");
+      }
     }
 
-    const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/, "");
+    const imageBlocks = images.map((img) => ({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: img.mimeType,
+        data: img.data.replace(/^data:[^;]+;base64,/, ""),
+      },
+    }));
 
     const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
 
@@ -119,8 +136,22 @@ exports.generateSet = onRequest(
               required: ["prompt", "referenceAnswer"],
             },
           },
+          fillBlank: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                text: {
+                  type: "string",
+                  description: "Phrase contenant ___ à la place du mot manquant.",
+                },
+                answer: { type: "string" },
+              },
+              required: ["text", "answer"],
+            },
+          },
         },
-        required: ["title", "subject", "cards", "quiz", "writing"],
+        required: ["title", "subject", "cards", "quiz", "writing", "fillBlank"],
       },
     };
 
@@ -130,6 +161,11 @@ exports.generateSet = onRequest(
     ]
       .filter(Boolean)
       .join(" ");
+
+    const pageNote =
+      images.length > 1
+        ? `Ces ${images.length} photos sont les pages successives d'un même exercice : combine-les en un seul set cohérent.`
+        : "";
 
     try {
       const message = await anthropic.messages.create({
@@ -141,17 +177,10 @@ exports.generateSet = onRequest(
           {
             role: "user",
             content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: mimeType,
-                  data: cleanBase64,
-                },
-              },
+              ...imageBlocks,
               {
                 type: "text",
-                text: `Regarde cette photo d'un exercice scolaire (probablement en allemand ou dans une autre matière). Génère un set de fiches de révision recto/verso, un petit quiz, et si pertinent des exercices d'écriture avec une réponse de référence. ${hints} Réponds uniquement via l'outil submit_flashcard_set.`,
+                text: `Regarde cette photo (ou ces photos) d'un exercice scolaire (probablement en allemand ou dans une autre matière). ${pageNote} Génère un set de fiches de révision recto/verso, un petit quiz, des exercices d'écriture avec une réponse de référence, et des phrases à trous (texte à trous) avec le mot manquant remplacé par ___. ${hints} Réponds uniquement via l'outil submit_flashcard_set.`,
               },
             ],
           },
@@ -194,6 +223,18 @@ exports.generateSet = onRequest(
             }))
         : [];
 
+      const fillBlank = Array.isArray(data.fillBlank)
+        ? data.fillBlank
+            .filter(
+              (f) =>
+                isNonEmptyString(f.text) &&
+                f.text.includes("___") &&
+                isNonEmptyString(f.answer)
+            )
+            .slice(0, MAX_FILL_BLANK)
+            .map((f) => ({ text: f.text.trim(), answer: f.answer.trim() }))
+        : [];
+
       res.status(200).json({
         ok: true,
         data: {
@@ -202,6 +243,7 @@ exports.generateSet = onRequest(
           cards,
           quiz,
           writing,
+          fillBlank,
         },
       });
     } catch (err) {

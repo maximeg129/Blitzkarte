@@ -327,6 +327,68 @@
     padding: 10px 14px; border-radius: 10px; margin: 12px 0;
   }
 
+  /* ---------- subject groups / room ---------- */
+  .subject-group { margin-top: 28px; }
+  .subject-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .subject-group-header h3 { margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+  .weekly-boss-badge {
+    font-family: var(--font-pixel); font-size: 0.55rem; color: #0a0a16;
+    background: var(--reward); padding: 4px 8px; border-radius: 6px;
+    box-shadow: 0 0 10px rgba(255,193,69,0.6);
+  }
+
+  /* ---------- multi-photo scan ---------- */
+  .photo-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .photo-thumb { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 2px solid var(--accent); }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb .remove-photo {
+    position: absolute; top: 0; right: 0; background: var(--error); color: #fff;
+    border: none; width: 20px; height: 20px; border-radius: 0 0 0 8px; cursor: pointer; font-size: 0.7rem; line-height: 20px;
+  }
+
+  /* ---------- training hub ---------- */
+  #training-content h2 { margin-top: 0; }
+
+  /* ---------- matching game ---------- */
+  .match-board { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  .match-tile {
+    text-align: left; padding: 10px 12px; border-radius: 10px; font-size: 0.9rem;
+    border: 2px solid rgba(155,107,255,0.4); background: var(--panel); cursor: pointer; min-height: 44px;
+  }
+  .match-tile.is-selected { border-color: var(--accent); box-shadow: 0 0 10px rgba(76,243,255,0.4); }
+  .match-tile.is-matched { border-color: var(--reward); opacity: 0.35; cursor: default; }
+  .match-tile.is-wrong { border-color: var(--error); background: rgba(255,62,165,0.12); }
+  .match-timer { font-family: var(--font-pixel); font-size: 0.65rem; color: var(--accent); margin-top: 10px; }
+
+  /* ---------- true/false ---------- */
+  .truefalse-choices { display: flex; gap: 12px; margin-top: 16px; }
+  .truefalse-choices .btn { flex: 1; padding: 18px; font-size: 1.1rem; }
+
+  /* ---------- fill in the blank ---------- */
+  .fillblank-sentence { font-size: 1.1rem; margin: 18px 0; line-height: 1.8; }
+  .fillblank-sentence input {
+    width: 140px; padding: 6px 8px; border-radius: 6px; border: 2px solid var(--accent);
+    background: var(--bg); color: var(--text); font-size: 1rem; text-align: center;
+  }
+
+  /* ---------- dictation ---------- */
+  .dictation-controls { display: flex; gap: 10px; align-items: center; margin: 16px 0; }
+
+  /* ---------- achievements ---------- */
+  .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-top: 16px; }
+  .achievement { padding: 16px 10px; border-radius: 12px; text-align: center; background: var(--panel); border: 2px solid rgba(216,220,232,0.15); }
+  .achievement .icon { font-size: 1.8rem; display: block; margin-bottom: 8px; filter: grayscale(1); opacity: 0.35; }
+  .achievement.is-earned { border-color: var(--reward); box-shadow: 0 0 14px rgba(255,193,69,0.35); }
+  .achievement.is-earned .icon { filter: none; opacity: 1; }
+  .achievement .label { font-size: 0.75rem; }
+
+  /* ---------- power-up flash ---------- */
+  .boss-hp-fill.is-power { animation: powerup 0.5s ease; }
+  @keyframes powerup { 0% { filter: brightness(3) hue-rotate(0deg); } 100% { filter: brightness(1) hue-rotate(0deg); } }
+
   /* ---------- reduced motion ---------- */
   @media (prefers-reduced-motion: reduce) {
     .btn-primary { animation: none; box-shadow: 0 0 0 3px rgba(76,243,255,0.4); }
@@ -337,6 +399,7 @@
     .boss-hp-fill.is-hit { animation: none; filter: brightness(1.4); }
     .cabinet { transition: none; }
     .particle { display: none; }
+    .boss-hp-fill.is-power { animation: none; filter: brightness(1.6); }
   }
 </style>
 </head>
@@ -346,6 +409,7 @@
     <div class="logo">⚡ BLITZKARTE</div>
     <div id="combo-readout">COMBO x0</div>
     <div id="topbar-actions">
+      <button class="icon-btn" id="achievements-btn" type="button" title="Trophées">🏆</button>
       <button class="icon-btn" id="sound-toggle" type="button" aria-pressed="false" title="Son">🔇</button>
       <button class="icon-btn" id="signout-btn" type="button" title="Se déconnecter">⏻</button>
     </div>
@@ -388,9 +452,10 @@
         <h2 class="marquee" style="font-size:1.1rem;color:var(--accent)">INSÈRE TA PHOTO</h2>
         <p class="muted">Prends en photo ton exercice, Blitz s'occupe du reste.</p>
         <div class="field">
-          <label for="scan-file">Photo de l'exercice</label>
-          <input type="file" id="scan-file" accept="image/*" capture="environment" />
+          <label for="scan-file">Photo de l'exercice (plusieurs pages possibles)</label>
+          <input type="file" id="scan-file" accept="image/*" capture="environment" multiple />
         </div>
+        <div class="photo-thumbs" id="scan-thumbs"></div>
         <div class="field">
           <label for="scan-subject">Matière (optionnel)</label>
           <input type="text" id="scan-subject" placeholder="Allemand, Maths…" />
@@ -404,6 +469,46 @@
         <p class="error-banner" id="scan-error" hidden></p>
       </div>
       <div id="scan-preview"></div>
+    </section>
+
+    <section id="view-training" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="training-back-btn" type="button">← Retour à la salle</button>
+      <div id="training-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-match" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="match-back-btn" type="button">← Retour à l'entraînement</button>
+      <div id="match-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-truefalse" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="truefalse-back-btn" type="button">← Retour à l'entraînement</button>
+      <div id="truefalse-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-fillblank" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="fillblank-back-btn" type="button">← Retour à l'entraînement</button>
+      <div id="fillblank-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-dictation" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="dictation-back-btn" type="button">← Retour à l'entraînement</button>
+      <div id="dictation-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-survival" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="survival-back-btn" type="button">← Retour à l'entraînement</button>
+      <div id="survival-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-leaderboard" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="leaderboard-back-btn" type="button">← Retour à l'entraînement</button>
+      <div id="leaderboard-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-achievements" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="achievements-back-btn" type="button">← Retour à la salle</button>
+      <div id="achievements-content" style="margin-top:16px"></div>
     </section>
 
     <section id="view-cards" class="screen" data-view hidden>
@@ -450,7 +555,8 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp
+  getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp,
+  collection, query, orderBy, limit, getDocs
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // ====== À CONFIGURER : colle ici la config de ton projet Firebase ======
@@ -494,6 +600,44 @@ function subjectHue(subject) {
   return h;
 }
 
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function isoWeekNumber(d = new Date()) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+}
+
+function guessLang(subject) {
+  const s = (subject || "").toLowerCase();
+  if (s.includes("allemand") || s.includes("deutsch") || s.includes("german")) return "de-DE";
+  if (s.includes("anglais") || s.includes("english")) return "en-US";
+  if (s.includes("espagnol") || s.includes("spanish")) return "es-ES";
+  if (s.includes("italien") || s.includes("italian")) return "it-IT";
+  return "fr-FR";
+}
+
+function speakText(text, subject) {
+  if (!("speechSynthesis" in window)) return;
+  try {
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = guessLang(subject);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  } catch (e) {
+    /* synthèse vocale indisponible */
+  }
+}
+
 function playSfx(name) {
   if (!state.doc || !state.doc.soundEnabled) return;
   try {
@@ -525,7 +669,10 @@ function spawnParticles(container) {
   setTimeout(() => field.remove(), 1000);
 }
 
-const views = ["loading", "config", "auth", "room", "scan", "cards", "quiz", "writing", "results"];
+const views = [
+  "loading", "config", "auth", "room", "scan", "cards", "quiz", "writing", "results",
+  "training", "match", "truefalse", "fillblank", "dictation", "survival", "leaderboard", "achievements",
+];
 function setView(name) {
   state.currentView = name;
   for (const v of views) {
@@ -542,8 +689,15 @@ const state = {
   doc: null,
   currentView: "loading",
   currentSetId: null,
+  currentSubject: null,
   cardIndex: 0,
   quiz: null,
+  scanImages: [],
+  match: null,
+  truefalse: null,
+  fillblank: null,
+  dictation: null,
+  survival: null,
 };
 
 function configIsPlaceholder() {
@@ -588,17 +742,34 @@ async function init() {
   });
 
   document.getElementById("new-set-btn").addEventListener("click", () => {
+    state.scanImages = [];
+    document.getElementById("scan-file").value = "";
+    renderScanThumbs();
     document.getElementById("scan-preview").innerHTML = "";
     document.getElementById("scan-status").hidden = true;
     document.getElementById("scan-error").hidden = true;
     setView("scan");
   });
+  document.getElementById("scan-file").addEventListener("change", onScanFilesSelected);
   const backToRoom = () => { setView("room"); renderRoom(); };
+  const backToTraining = () => openTraining(state.currentSubject);
   document.getElementById("scan-back-btn").addEventListener("click", backToRoom);
   document.getElementById("cards-back-btn").addEventListener("click", backToRoom);
   document.getElementById("quiz-back-btn").addEventListener("click", backToRoom);
   document.getElementById("writing-back-btn").addEventListener("click", backToRoom);
+  document.getElementById("training-back-btn").addEventListener("click", backToRoom);
+  document.getElementById("achievements-back-btn").addEventListener("click", backToRoom);
+  document.getElementById("match-back-btn").addEventListener("click", backToTraining);
+  document.getElementById("truefalse-back-btn").addEventListener("click", backToTraining);
+  document.getElementById("fillblank-back-btn").addEventListener("click", backToTraining);
+  document.getElementById("dictation-back-btn").addEventListener("click", backToTraining);
+  document.getElementById("survival-back-btn").addEventListener("click", backToTraining);
+  document.getElementById("leaderboard-back-btn").addEventListener("click", backToTraining);
   document.getElementById("scan-generate-btn").addEventListener("click", onGenerateSet);
+  document.getElementById("achievements-btn").addEventListener("click", () => {
+    setView("achievements");
+    renderAchievements();
+  });
 
   onAuthStateChanged(state.auth, onAuthChanged);
 }
@@ -626,6 +797,10 @@ async function loadUserDoc() {
     state.doc = snap.data();
     if (!Array.isArray(state.doc.sets)) state.doc.sets = [];
     if (!state.doc.streak) state.doc.streak = { count: 0, lastActiveDate: "", bestCount: 0 };
+    if (!state.doc.subjectStats) state.doc.subjectStats = {};
+    state.doc.sets.forEach((s) => {
+      if (!Array.isArray(s.fillBlank)) s.fillBlank = [];
+    });
   } else {
     state.doc = {
       profile: {
@@ -636,9 +811,34 @@ async function loadUserDoc() {
       streak: { count: 0, lastActiveDate: "", bestCount: 0 },
       soundEnabled: false,
       sets: [],
+      subjectStats: {},
     };
     await setDoc(ref, state.doc);
   }
+}
+
+function getSubjectStats(subject) {
+  if (!state.doc.subjectStats) state.doc.subjectStats = {};
+  if (!state.doc.subjectStats[subject]) {
+    state.doc.subjectStats[subject] = { bestMatchMs: null, bestSurvivalRun: 0, highScores: [] };
+  }
+  return state.doc.subjectStats[subject];
+}
+
+function subjectsList() {
+  return [...new Set((state.doc.sets || []).map((s) => s.subject))];
+}
+
+function subjectPool(subject, key) {
+  return (state.doc.sets || [])
+    .filter((s) => s.subject === subject)
+    .flatMap((s) => s[key] || []);
+}
+
+function weeklyBossSubject() {
+  const subjects = subjectsList();
+  if (!subjects.length) return null;
+  return subjects[isoWeekNumber() % subjects.length];
 }
 
 async function persistDoc() {
@@ -684,7 +884,25 @@ function renderRoom() {
       </div>`;
     return;
   }
-  container.innerHTML = `<div class="arcade-room">${sets.map(cabinetHtml).join("")}</div>`;
+  const bossSubject = weeklyBossSubject();
+  const bySubject = {};
+  sets.forEach((s) => {
+    (bySubject[s.subject] = bySubject[s.subject] || []).push(s);
+  });
+
+  container.innerHTML = Object.entries(bySubject)
+    .map(
+      ([subject, subjectSets]) => `
+    <div class="subject-group">
+      <div class="subject-group-header">
+        <h3>${esc(subject)} ${subject === bossSubject ? '<span class="weekly-boss-badge">⚡ BOSS DE LA SEMAINE</span>' : ""}</h3>
+        <button class="btn btn-secondary train-btn" data-subject="${esc(subject)}" type="button">S'entraîner sur ${esc(subject)} →</button>
+      </div>
+      <div class="arcade-room">${subjectSets.map(cabinetHtml).join("")}</div>
+    </div>`
+    )
+    .join("");
+
   container.querySelectorAll(".cabinet").forEach((el) => {
     el.addEventListener("click", () => openSet(el.dataset.setId));
     el.addEventListener("keydown", (e) => {
@@ -693,6 +911,9 @@ function renderRoom() {
         openSet(el.dataset.setId);
       }
     });
+  });
+  container.querySelectorAll(".train-btn").forEach((btn) => {
+    btn.addEventListener("click", () => openTraining(btn.dataset.subject));
   });
 }
 
@@ -726,40 +947,102 @@ function openSet(id) {
   renderCards();
 }
 
-/* ---------------- Scan / generate ---------------- */
+/* ---------------- Training hub (par matière) ---------------- */
+function openTraining(subject) {
+  state.currentSubject = subject;
+  setView("training");
+  renderTraining(subject);
+}
+
+function renderTraining(subject) {
+  const container = document.getElementById("training-content");
+  const cardCount = subjectPool(subject, "cards").length;
+  const quizCount = subjectPool(subject, "quiz").length;
+  const fbCount = subjectPool(subject, "fillBlank").length;
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--accent)">${esc(subject)}</h2>
+    <p class="muted">${cardCount} fiches · ${quizCount} questions de quiz</p>
+    <div class="card-controls">
+      <button class="btn btn-primary" id="train-boss-btn" type="button" ${quizCount ? "" : "disabled"}>⚔ Boss géant</button>
+      <button class="btn btn-secondary" id="train-survival-btn" type="button" ${quizCount ? "" : "disabled"}>🛡 Mode Survie</button>
+    </div>
+    <div class="card-controls">
+      <button class="btn btn-secondary" id="train-match-btn" type="button" ${cardCount >= 2 ? "" : "disabled"}>🧩 Association</button>
+      <button class="btn btn-secondary" id="train-truefalse-btn" type="button" ${quizCount ? "" : "disabled"}>⚡ Vrai/Faux éclair</button>
+    </div>
+    <div class="card-controls">
+      <button class="btn btn-secondary" id="train-fillblank-btn" type="button" ${fbCount ? "" : "disabled"}>✏ Texte à trous</button>
+      <button class="btn btn-secondary" id="train-dictation-btn" type="button" ${cardCount ? "" : "disabled"}>🎧 Dictée</button>
+    </div>
+    <button class="btn btn-ghost" id="train-leaderboard-btn" type="button" style="margin-top:12px">🏅 Classement</button>
+  `;
+  document.getElementById("train-boss-btn").addEventListener("click", () => startSubjectBoss(subject));
+  document.getElementById("train-survival-btn").addEventListener("click", () => startSurvival(subject));
+  document.getElementById("train-match-btn").addEventListener("click", () => startMatch(subject));
+  document.getElementById("train-truefalse-btn").addEventListener("click", () => startTrueFalse(subject));
+  document.getElementById("train-fillblank-btn").addEventListener("click", () => startFillBlank(subject));
+  document.getElementById("train-dictation-btn").addEventListener("click", () => startDictation(subject));
+  document.getElementById("train-leaderboard-btn").addEventListener("click", () => openLeaderboard(subject));
+}
+
+/* ---------------- Scan / generate (multi-page) ---------------- */
+async function onScanFilesSelected(e) {
+  const files = Array.from(e.target.files || []);
+  for (const file of files) {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    state.scanImages.push({ dataUrl, mimeType: file.type });
+  }
+  e.target.value = "";
+  renderScanThumbs();
+}
+
+function renderScanThumbs() {
+  const container = document.getElementById("scan-thumbs");
+  container.innerHTML = state.scanImages
+    .map(
+      (img, i) => `
+    <div class="photo-thumb">
+      <img src="${img.dataUrl}" alt="Page ${i + 1}" />
+      <button class="remove-photo" type="button" data-index="${i}" aria-label="Retirer cette page">✕</button>
+    </div>`
+    )
+    .join("");
+  container.querySelectorAll(".remove-photo").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.scanImages.splice(Number(btn.dataset.index), 1);
+      renderScanThumbs();
+    });
+  });
+}
+
 async function onGenerateSet() {
-  const fileInput = document.getElementById("scan-file");
   const statusEl = document.getElementById("scan-status");
   const errEl = document.getElementById("scan-error");
   const genBtn = document.getElementById("scan-generate-btn");
   errEl.hidden = true;
 
-  const file = fileInput.files && fileInput.files[0];
-  if (!file) {
-    errEl.textContent = "Choisis une photo d'abord.";
+  if (state.scanImages.length === 0) {
+    errEl.textContent = "Ajoute au moins une photo d'abord.";
     errEl.hidden = false;
     return;
   }
 
   genBtn.disabled = true;
   statusEl.hidden = false;
-  statusEl.textContent = "Blitz scanne ta photo…";
+  statusEl.textContent = state.scanImages.length > 1 ? "Blitz scanne tes pages…" : "Blitz scanne ta photo…";
 
   try {
-    const imageBase64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
     const token = await state.user.getIdToken();
     const res = await fetch("/api/generateSet", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        imageBase64,
-        mimeType: file.type,
+        images: state.scanImages.map((img) => ({ data: img.dataUrl, mimeType: img.mimeType })),
         subject: document.getElementById("scan-subject").value.trim(),
         context: document.getElementById("scan-context").value.trim(),
       }),
@@ -785,7 +1068,7 @@ function renderScanPreview(data) {
   container.innerHTML = `
     <div class="panel" style="margin-top:16px;max-width:560px">
       <h3>${esc(data.title)} <span class="badge">${esc(data.subject)}</span></h3>
-      <p class="muted">${data.cards.length} fiches · ${data.quiz.length} questions de quiz · ${data.writing.length} exercice(s) d'écriture</p>
+      <p class="muted">${data.cards.length} fiches · ${data.quiz.length} questions de quiz · ${data.writing.length} exercice(s) d'écriture · ${data.fillBlank.length} texte(s) à trous</p>
       <button class="btn btn-primary" id="accept-set-btn" type="button">Ajouter à la salle</button>
       <button class="btn btn-ghost" id="discard-set-btn" type="button">Annuler</button>
     </div>`;
@@ -807,11 +1090,14 @@ async function acceptGeneratedSet(data) {
     cards: data.cards.map((c) => ({ id: uuid(), front: c.front, back: c.back, learned: false, lastReviewedAt: null })),
     quiz: data.quiz.map((q) => ({ id: uuid(), question: q.question, choices: q.choices, answer: q.answer })),
     writing: data.writing.map((w) => ({ id: uuid(), prompt: w.prompt, referenceAnswer: w.referenceAnswer })),
+    fillBlank: data.fillBlank.map((f) => ({ id: uuid(), text: f.text, answer: f.answer })),
     quizHighScores: [],
   };
   state.doc.sets.push(newSet);
   await persistDoc();
+  state.scanImages = [];
   document.getElementById("scan-file").value = "";
+  document.getElementById("scan-thumbs").innerHTML = "";
   document.getElementById("scan-preview").innerHTML = "";
   setView("room");
   renderRoom();
@@ -897,11 +1183,13 @@ function checkSetCompletion(set, container) {
   }
 }
 
-/* ---------------- Boss battle (quiz) ---------------- */
+/* ---------------- Boss battle (quiz) — scope 'set' ou 'subject' ---------------- */
 function startQuiz(set) {
   if (!set.quiz.length) return;
   state.quiz = {
+    scope: "set",
     setId: set.id,
+    pool: set.quiz,
     index: 0,
     hp: set.quiz.length,
     maxHp: set.quiz.length,
@@ -913,17 +1201,37 @@ function startQuiz(set) {
   renderQuiz();
 }
 
+const BOSS_GEANT_SIZE = 20;
+
+function startSubjectBoss(subject) {
+  const pool = shuffle(subjectPool(subject, "quiz")).slice(0, BOSS_GEANT_SIZE);
+  if (!pool.length) return;
+  state.quiz = {
+    scope: "subject",
+    subject,
+    pool,
+    index: 0,
+    hp: pool.length,
+    maxHp: pool.length,
+    combo: 0,
+    comboMax: 0,
+    score: 0,
+  };
+  setView("quiz");
+  renderQuiz();
+}
+
 function renderQuiz() {
-  const set = findSet(state.quiz.setId);
-  const q = set.quiz[state.quiz.index];
+  const q = state.quiz.pool[state.quiz.index];
   const container = document.getElementById("quiz-content");
   const hpPct = Math.max(0, (state.quiz.hp / state.quiz.maxHp) * 100);
   const choices = q.choices && q.choices.length ? q.choices : null;
+  const title = state.quiz.scope === "subject" ? "BOSS GÉANT" : "BOSS BATTLE";
 
   container.innerHTML = `
-    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">BOSS BATTLE</h2>
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">${title}</h2>
     <div class="boss-hp-shell"><div class="boss-hp-fill" id="boss-hp-fill" style="width:${hpPct}%"></div></div>
-    <div class="combo-bar">COMBO x${state.quiz.combo}</div>
+    <div class="combo-bar">COMBO x${state.quiz.combo}${state.quiz.combo >= 5 ? " ⚡ POWER-UP ACTIF" : ""}</div>
     <div class="quiz-question">${esc(q.question)}</div>
     ${
       choices
@@ -940,13 +1248,13 @@ function renderQuiz() {
     container.querySelectorAll(".quiz-choice").forEach((btn) => {
       btn.addEventListener("click", () => {
         const chosen = choices[Number(btn.dataset.choice)];
-        answerQuiz(chosen === q.answer, container);
+        answerQuiz(chosen === q.answer);
       });
     });
   } else {
     const submit = () => {
       const val = document.getElementById("quiz-text-answer").value.trim().toLowerCase();
-      answerQuiz(val === q.answer.trim().toLowerCase(), container);
+      answerQuiz(val === q.answer.trim().toLowerCase());
     };
     document.getElementById("quiz-submit-text").addEventListener("click", submit);
     document.getElementById("quiz-text-answer").addEventListener("keydown", (e) => {
@@ -955,17 +1263,19 @@ function renderQuiz() {
   }
 }
 
-function answerQuiz(isCorrect, container) {
+function answerQuiz(isCorrect) {
   const fb = document.getElementById("quiz-feedback");
   const hpFill = document.getElementById("boss-hp-fill");
   if (isCorrect) {
-    state.quiz.hp -= 1;
+    const powerUp = state.quiz.combo >= 5;
+    const dmg = powerUp ? 2 : 1;
+    state.quiz.hp = Math.max(0, state.quiz.hp - dmg);
     state.quiz.combo += 1;
     state.quiz.comboMax = Math.max(state.quiz.comboMax, state.quiz.combo);
     state.quiz.score += 1;
-    hpFill.classList.add("is-hit");
+    hpFill.classList.add(powerUp ? "is-power" : "is-hit");
     playSfx("ding");
-    fb.innerHTML = `<div class="quiz-feedback good">Coup porté ! Combo x${state.quiz.combo} 🔥</div>`;
+    fb.innerHTML = `<div class="quiz-feedback good">${powerUp ? "⚡ Coup critique !" : "Coup porté !"} Combo x${state.quiz.combo} 🔥</div>`;
   } else {
     state.quiz.combo = 0;
     playSfx("buzz");
@@ -973,44 +1283,454 @@ function answerQuiz(isCorrect, container) {
   }
   setTimeout(() => {
     state.quiz.index += 1;
-    const set = findSet(state.quiz.setId);
-    if (state.quiz.index >= set.quiz.length) {
-      finishQuiz(set);
+    if (state.quiz.index >= state.quiz.pool.length) {
+      finishQuiz();
     } else {
       renderQuiz();
     }
   }, 700);
 }
 
-async function finishQuiz(set) {
-  const pct = Math.round((state.quiz.score / state.quiz.maxHp) * 100);
-  const entry = { score: pct, date: todayKey(), comboMax: state.quiz.comboMax };
-  set.quizHighScores = [...(set.quizHighScores || []), entry]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 5);
+async function finishQuiz() {
+  const { scope, setId, subject, score, maxHp, comboMax } = state.quiz;
+  const pct = Math.round((score / maxHp) * 100);
+  const entry = { score: pct, date: todayKey(), comboMax };
+  let highScores;
+  if (scope === "set") {
+    const set = findSet(setId);
+    set.quizHighScores = [...(set.quizHighScores || []), entry].sort((a, b) => b.score - a.score).slice(0, 5);
+    highScores = set.quizHighScores;
+  } else {
+    const stats = getSubjectStats(subject);
+    stats.highScores = [...(stats.highScores || []), entry].sort((a, b) => b.score - a.score).slice(0, 5);
+    highScores = stats.highScores;
+    await upsertLeaderboard(subject, pct, comboMax);
+  }
   await persistDoc();
 
   const container = document.getElementById("results-content");
   container.innerHTML = `
     <h2 class="marquee" style="font-size:1.3rem;color:var(--reward)">${pct >= 100 ? "BOSS VAINCU" : "MANCHE TERMINÉE"}</h2>
-    <p>Score : ${pct}% · Combo max x${state.quiz.comboMax}</p>
+    <p>Score : ${pct}% · Combo max x${comboMax}</p>
     <table class="highscore-table">
       <thead><tr><th>Score</th><th>Combo</th><th>Date</th></tr></thead>
-      <tbody>${set.quizHighScores
+      <tbody>${highScores
         .map((e) => `<tr><td class="score">${e.score}%</td><td class="score">x${e.comboMax}</td><td>${esc(e.date)}</td></tr>`)
         .join("")}</tbody>
     </table>
     <div class="card-controls" style="margin-top:16px">
       <button class="btn btn-primary" id="retry-quiz-btn" type="button">Manche suivante →</button>
-      <button class="btn btn-ghost" id="results-room-btn" type="button">Retour à la salle</button>
+      <button class="btn btn-ghost" id="results-room-btn" type="button">${scope === "subject" ? "Retour à l'entraînement" : "Retour à la salle"}</button>
     </div>
   `;
-  document.getElementById("retry-quiz-btn").addEventListener("click", () => startQuiz(set));
+  document.getElementById("retry-quiz-btn").addEventListener("click", () => {
+    if (scope === "set") startQuiz(findSet(setId));
+    else startSubjectBoss(subject);
+  });
   document.getElementById("results-room-btn").addEventListener("click", () => {
-    setView("room");
-    renderRoom();
+    if (scope === "subject") openTraining(subject);
+    else {
+      setView("room");
+      renderRoom();
+    }
   });
   setView("results");
+}
+
+/* ---------------- Mode Survie ---------------- */
+function startSurvival(subject) {
+  const pool = shuffle(subjectPool(subject, "quiz"));
+  if (!pool.length) return;
+  state.survival = { subject, pool, index: 0, streak: 0 };
+  renderSurvival();
+  setView("survival");
+}
+
+function renderSurvival() {
+  const s = state.survival;
+  if (s.index >= s.pool.length) {
+    s.pool = shuffle(s.pool);
+    s.index = 0;
+  }
+  const q = s.pool[s.index];
+  const container = document.getElementById("survival-content");
+  const choices = q.choices && q.choices.length ? q.choices : null;
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">MODE SURVIE — ${esc(s.subject)}</h2>
+    <div class="combo-bar">Série en cours : x${s.streak}</div>
+    <div class="quiz-question">${esc(q.question)}</div>
+    ${
+      choices
+        ? `<div class="quiz-choices">${choices
+            .map((c, i) => `<button class="quiz-choice" data-choice="${i}" type="button">${esc(c)}</button>`)
+            .join("")}</div>`
+        : `<div class="field"><input type="text" id="survival-text-answer" placeholder="Ta réponse…" /></div>
+           <button class="btn btn-primary" id="survival-submit-text" type="button">Valider</button>`
+    }
+    <div id="survival-feedback"></div>
+  `;
+  const answer = (isCorrect) => answerSurvival(isCorrect);
+  if (choices) {
+    container.querySelectorAll(".quiz-choice").forEach((btn) => {
+      btn.addEventListener("click", () => answer(choices[Number(btn.dataset.choice)] === q.answer));
+    });
+  } else {
+    const submit = () => {
+      const val = document.getElementById("survival-text-answer").value.trim().toLowerCase();
+      answer(val === q.answer.trim().toLowerCase());
+    };
+    document.getElementById("survival-submit-text").addEventListener("click", submit);
+    document.getElementById("survival-text-answer").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submit();
+    });
+  }
+}
+
+async function answerSurvival(isCorrect) {
+  const fb = document.getElementById("survival-feedback");
+  if (isCorrect) {
+    state.survival.streak += 1;
+    playSfx("ding");
+    fb.innerHTML = `<div class="quiz-feedback good">Toujours en vie ! Série x${state.survival.streak} 🔥</div>`;
+    setTimeout(() => {
+      state.survival.index += 1;
+      renderSurvival();
+    }, 500);
+  } else {
+    playSfx("buzz");
+    const stats = getSubjectStats(state.survival.subject);
+    const best = Math.max(stats.bestSurvivalRun || 0, state.survival.streak);
+    const isRecord = best > (stats.bestSurvivalRun || 0);
+    stats.bestSurvivalRun = best;
+    await persistDoc();
+    fb.innerHTML = `
+      <div class="quiz-feedback bad">Éliminé ! Série finale : x${state.survival.streak}${isRecord ? " — Nouveau record !" : ""}</div>
+      <div class="card-controls" style="margin-top:12px">
+        <button class="btn btn-primary" id="survival-retry-btn" type="button">Rejouer →</button>
+        <button class="btn btn-ghost" id="survival-training-btn" type="button">Retour à l'entraînement</button>
+      </div>`;
+    document.getElementById("survival-retry-btn").addEventListener("click", () => startSurvival(state.survival.subject));
+    document.getElementById("survival-training-btn").addEventListener("click", () => openTraining(state.survival.subject));
+  }
+}
+
+/* ---------------- Association chronométrée ---------------- */
+function startMatch(subject) {
+  const cards = shuffle(subjectPool(subject, "cards")).slice(0, 8);
+  if (cards.length < 2) return;
+  state.match = {
+    subject,
+    pairs: cards,
+    leftOrder: shuffle(cards.map((c) => c.id)),
+    rightOrder: shuffle(cards.map((c) => c.id)),
+    matched: new Set(),
+    selectedLeft: null,
+    selectedRight: null,
+    startTime: Date.now(),
+    locked: false,
+  };
+  renderMatch();
+  setView("match");
+}
+
+function renderMatch() {
+  const m = state.match;
+  const container = document.getElementById("match-content");
+  const byId = Object.fromEntries(m.pairs.map((c) => [c.id, c]));
+  const tile = (id, side, label) => {
+    const isMatched = m.matched.has(id);
+    const isSelected = (side === "left" ? m.selectedLeft : m.selectedRight) === id;
+    return `<button class="match-tile ${isMatched ? "is-matched" : ""} ${isSelected ? "is-selected" : ""}" data-side="${side}" data-id="${id}" type="button" ${isMatched ? "disabled" : ""}>${esc(label)}</button>`;
+  };
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">ASSOCIATION — ${esc(m.subject)}</h2>
+    <p class="muted">Relie chaque terme à sa traduction, le plus vite possible !</p>
+    <div class="match-board">
+      <div>${m.leftOrder.map((id) => tile(id, "left", byId[id].front)).join("")}</div>
+      <div>${m.rightOrder.map((id) => tile(id, "right", byId[id].back)).join("")}</div>
+    </div>
+    <div class="match-timer" id="match-timer">0.0s</div>
+  `;
+  container.querySelectorAll(".match-tile").forEach((btn) => {
+    btn.addEventListener("click", () => onMatchTileClick(btn.dataset.side, btn.dataset.id));
+  });
+  if (!m.timerHandle) {
+    m.timerHandle = setInterval(() => {
+      const el = document.getElementById("match-timer");
+      if (el) el.textContent = `${((Date.now() - m.startTime) / 1000).toFixed(1)}s`;
+    }, 100);
+  }
+}
+
+function onMatchTileClick(side, id) {
+  const m = state.match;
+  if (m.locked || m.matched.has(id)) return;
+  if (side === "left") m.selectedLeft = id;
+  else m.selectedRight = id;
+  renderMatch();
+
+  if (m.selectedLeft && m.selectedRight) {
+    m.locked = true;
+    if (m.selectedLeft === m.selectedRight) {
+      m.matched.add(m.selectedLeft);
+      playSfx("ding");
+      m.selectedLeft = null;
+      m.selectedRight = null;
+      m.locked = false;
+      if (m.matched.size === m.pairs.length) {
+        finishMatch();
+        return;
+      }
+      renderMatch();
+    } else {
+      playSfx("buzz");
+      setTimeout(() => {
+        m.selectedLeft = null;
+        m.selectedRight = null;
+        m.locked = false;
+        renderMatch();
+      }, 500);
+    }
+  }
+}
+
+async function finishMatch() {
+  clearInterval(state.match.timerHandle);
+  const elapsedMs = Date.now() - state.match.startTime;
+  const stats = getSubjectStats(state.match.subject);
+  const isRecord = !stats.bestMatchMs || elapsedMs < stats.bestMatchMs;
+  if (isRecord) stats.bestMatchMs = elapsedMs;
+  await persistDoc();
+  playSfx("levelup");
+  const container = document.getElementById("match-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">TOUT ASSOCIÉ !</h2>
+    <p>Temps : ${(elapsedMs / 1000).toFixed(1)}s ${isRecord ? "— Nouveau record !" : `(record : ${(stats.bestMatchMs / 1000).toFixed(1)}s)`}</p>
+    <div class="card-controls" style="margin-top:16px">
+      <button class="btn btn-primary" id="match-retry-btn" type="button">Rejouer →</button>
+      <button class="btn btn-ghost" id="match-training-btn" type="button">Retour à l'entraînement</button>
+    </div>
+  `;
+  document.getElementById("match-retry-btn").addEventListener("click", () => startMatch(state.match.subject));
+  document.getElementById("match-training-btn").addEventListener("click", () => openTraining(state.match.subject));
+}
+
+/* ---------------- Vrai/Faux éclair ---------------- */
+function buildTrueFalseRound(subject) {
+  const quiz = subjectPool(subject, "quiz");
+  const allAnswers = quiz.map((q) => q.answer);
+  return shuffle(quiz)
+    .slice(0, 10)
+    .map((q) => {
+      let isTrue = Math.random() < 0.5;
+      let shownAnswer = q.answer;
+      if (!isTrue) {
+        const distractors = allAnswers.filter((a) => a !== q.answer);
+        if (distractors.length) {
+          shownAnswer = distractors[Math.floor(Math.random() * distractors.length)];
+        } else {
+          isTrue = true;
+        }
+      }
+      return { question: q.question, shownAnswer, isTrue };
+    });
+}
+
+function startTrueFalse(subject) {
+  const rounds = buildTrueFalseRound(subject);
+  if (!rounds.length) return;
+  state.truefalse = { subject, rounds, index: 0, score: 0 };
+  renderTrueFalse();
+  setView("truefalse");
+}
+
+function renderTrueFalse() {
+  const tf = state.truefalse;
+  const round = tf.rounds[tf.index];
+  const container = document.getElementById("truefalse-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">VRAI OU FAUX — ${esc(tf.subject)}</h2>
+    <p class="muted">Question ${tf.index + 1}/${tf.rounds.length} · Score : ${tf.score}</p>
+    <div class="quiz-question">${esc(round.question)} → <strong>${esc(round.shownAnswer)}</strong></div>
+    <div class="truefalse-choices">
+      <button class="btn btn-primary" id="tf-true-btn" type="button">✓ VRAI</button>
+      <button class="btn btn-secondary" id="tf-false-btn" type="button">✕ FAUX</button>
+    </div>
+    <div id="truefalse-feedback"></div>
+  `;
+  document.getElementById("tf-true-btn").addEventListener("click", () => answerTrueFalse(true));
+  document.getElementById("tf-false-btn").addEventListener("click", () => answerTrueFalse(false));
+}
+
+function answerTrueFalse(guessTrue) {
+  const tf = state.truefalse;
+  const round = tf.rounds[tf.index];
+  const isCorrect = guessTrue === round.isTrue;
+  const fb = document.getElementById("truefalse-feedback");
+  if (isCorrect) {
+    tf.score += 1;
+    playSfx("ding");
+    fb.innerHTML = `<div class="quiz-feedback good">Bien joué !</div>`;
+  } else {
+    playSfx("buzz");
+    fb.innerHTML = `<div class="quiz-feedback bad">Raté, c'était ${round.isTrue ? "VRAI" : "FAUX"}.</div>`;
+  }
+  setTimeout(() => {
+    tf.index += 1;
+    if (tf.index >= tf.rounds.length) finishTrueFalse();
+    else renderTrueFalse();
+  }, 600);
+}
+
+function finishTrueFalse() {
+  const tf = state.truefalse;
+  const container = document.getElementById("truefalse-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">MANCHE TERMINÉE</h2>
+    <p>Score : ${tf.score}/${tf.rounds.length}</p>
+    <div class="card-controls" style="margin-top:16px">
+      <button class="btn btn-primary" id="tf-retry-btn" type="button">Rejouer →</button>
+      <button class="btn btn-ghost" id="tf-training-btn" type="button">Retour à l'entraînement</button>
+    </div>
+  `;
+  document.getElementById("tf-retry-btn").addEventListener("click", () => startTrueFalse(tf.subject));
+  document.getElementById("tf-training-btn").addEventListener("click", () => openTraining(tf.subject));
+}
+
+/* ---------------- Texte à trous ---------------- */
+function startFillBlank(subject) {
+  const pool = shuffle(subjectPool(subject, "fillBlank"));
+  if (!pool.length) return;
+  state.fillblank = { subject, pool, index: 0, score: 0 };
+  renderFillBlank();
+  setView("fillblank");
+}
+
+function renderFillBlank() {
+  const fb = state.fillblank;
+  const item = fb.pool[fb.index];
+  const container = document.getElementById("fillblank-content");
+  const [before, after] = item.text.split("___");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">TEXTE À TROUS — ${esc(fb.subject)}</h2>
+    <p class="muted">Question ${fb.index + 1}/${fb.pool.length} · Score : ${fb.score}</p>
+    <div class="fillblank-sentence">${esc(before || "")}<input type="text" id="fillblank-answer" autocomplete="off" />${esc(after || "")}</div>
+    <button class="btn btn-primary" id="fillblank-submit-btn" type="button">Valider</button>
+    <div id="fillblank-feedback"></div>
+  `;
+  const submit = () => {
+    const val = document.getElementById("fillblank-answer").value.trim().toLowerCase();
+    answerFillBlank(val === item.answer.trim().toLowerCase(), item.answer);
+  };
+  document.getElementById("fillblank-submit-btn").addEventListener("click", submit);
+  document.getElementById("fillblank-answer").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+  document.getElementById("fillblank-answer").focus();
+}
+
+function answerFillBlank(isCorrect, correctAnswer) {
+  const fb = state.fillblank;
+  const el = document.getElementById("fillblank-feedback");
+  if (isCorrect) {
+    fb.score += 1;
+    playSfx("ding");
+    el.innerHTML = `<div class="quiz-feedback good">Exact !</div>`;
+  } else {
+    playSfx("buzz");
+    el.innerHTML = `<div class="quiz-feedback bad">Raté, la réponse était « ${esc(correctAnswer)} ».</div>`;
+  }
+  setTimeout(() => {
+    fb.index += 1;
+    if (fb.index >= fb.pool.length) finishFillBlank();
+    else renderFillBlank();
+  }, 900);
+}
+
+function finishFillBlank() {
+  const fb = state.fillblank;
+  const container = document.getElementById("fillblank-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">MANCHE TERMINÉE</h2>
+    <p>Score : ${fb.score}/${fb.pool.length}</p>
+    <div class="card-controls" style="margin-top:16px">
+      <button class="btn btn-primary" id="fb-retry-btn" type="button">Rejouer →</button>
+      <button class="btn btn-ghost" id="fb-training-btn" type="button">Retour à l'entraînement</button>
+    </div>
+  `;
+  document.getElementById("fb-retry-btn").addEventListener("click", () => startFillBlank(fb.subject));
+  document.getElementById("fb-training-btn").addEventListener("click", () => openTraining(fb.subject));
+}
+
+/* ---------------- Dictée ---------------- */
+function startDictation(subject) {
+  const cards = shuffle(subjectPool(subject, "cards")).slice(0, 10);
+  if (!cards.length) return;
+  state.dictation = { subject, cards, index: 0, score: 0 };
+  renderDictation();
+  setView("dictation");
+}
+
+function renderDictation() {
+  const d = state.dictation;
+  const item = d.cards[d.index];
+  const container = document.getElementById("dictation-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">DICTÉE — ${esc(d.subject)}</h2>
+    <p class="muted">Question ${d.index + 1}/${d.cards.length} · Score : ${d.score}</p>
+    <p class="muted">Écoute et écris ce que tu entends.</p>
+    <div class="dictation-controls">
+      <button class="btn btn-secondary" id="dictation-listen-btn" type="button">🔊 Écouter</button>
+      <input type="text" id="dictation-answer" autocomplete="off" placeholder="Ce que tu as entendu…" />
+    </div>
+    <button class="btn btn-primary" id="dictation-submit-btn" type="button">Valider</button>
+    <div id="dictation-feedback"></div>
+  `;
+  const listen = () => speakText(item.front, d.subject);
+  document.getElementById("dictation-listen-btn").addEventListener("click", listen);
+  const submit = () => {
+    const val = document.getElementById("dictation-answer").value.trim().toLowerCase();
+    answerDictation(val === item.front.trim().toLowerCase(), item.front);
+  };
+  document.getElementById("dictation-submit-btn").addEventListener("click", submit);
+  document.getElementById("dictation-answer").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+  listen();
+}
+
+function answerDictation(isCorrect, correctAnswer) {
+  const d = state.dictation;
+  const el = document.getElementById("dictation-feedback");
+  if (isCorrect) {
+    d.score += 1;
+    playSfx("ding");
+    el.innerHTML = `<div class="quiz-feedback good">Exact !</div>`;
+  } else {
+    playSfx("buzz");
+    el.innerHTML = `<div class="quiz-feedback bad">Raté, c'était « ${esc(correctAnswer)} ».</div>`;
+  }
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  setTimeout(() => {
+    d.index += 1;
+    if (d.index >= d.cards.length) finishDictation();
+    else renderDictation();
+  }, 900);
+}
+
+function finishDictation() {
+  const d = state.dictation;
+  const container = document.getElementById("dictation-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.2rem;color:var(--reward)">MANCHE TERMINÉE</h2>
+    <p>Score : ${d.score}/${d.cards.length}</p>
+    <div class="card-controls" style="margin-top:16px">
+      <button class="btn btn-primary" id="dict-retry-btn" type="button">Rejouer →</button>
+      <button class="btn btn-ghost" id="dict-training-btn" type="button">Retour à l'entraînement</button>
+    </div>
+  `;
+  document.getElementById("dict-retry-btn").addEventListener("click", () => startDictation(d.subject));
+  document.getElementById("dict-training-btn").addEventListener("click", () => openTraining(d.subject));
 }
 
 /* ---------------- Writing ---------------- */
@@ -1077,6 +1797,103 @@ async function submitWriting(item, index, set) {
     resultEl.innerHTML = `<p class="error-banner">Impossible de contacter le serveur, réessaie plus tard.</p>`;
   } finally {
     btn.disabled = false;
+  }
+}
+
+/* ---------------- Achievements ---------------- */
+function computeAchievements() {
+  const sets = state.doc.sets || [];
+  const subjects = new Set(sets.map((s) => s.subject));
+  const completedCount = sets.filter((s) => s.completed).length;
+  const bestStreak = (state.doc.streak && state.doc.streak.bestCount) || 0;
+  const subjectStatsList = Object.values(state.doc.subjectStats || {});
+  const bossWon =
+    sets.some((s) => (s.quizHighScores || []).some((e) => e.score >= 100)) ||
+    subjectStatsList.some((st) => (st.highScores || []).some((e) => e.score >= 100));
+  const bestSurvival = subjectStatsList.reduce((max, st) => Math.max(max, st.bestSurvivalRun || 0), 0);
+
+  return [
+    { id: "first_set", label: "Première borne créée", icon: "📇", earned: sets.length >= 1 },
+    { id: "first_clear", label: "Premier level cleared", icon: "🏁", earned: completedCount >= 1 },
+    { id: "five_clear", label: "5 sets nettoyés", icon: "🧹", earned: completedCount >= 5 },
+    { id: "streak_7", label: "Combo x7 en streak", icon: "🔥", earned: bestStreak >= 7 },
+    { id: "boss_slayer", label: "Boss vaincu à 100%", icon: "⚔️", earned: bossWon },
+    { id: "survivor_10", label: "Survie x10", icon: "🛡️", earned: bestSurvival >= 10 },
+    { id: "polyglot", label: "3 matières différentes", icon: "🌍", earned: subjects.size >= 3 },
+  ];
+}
+
+function renderAchievements() {
+  const container = document.getElementById("achievements-content");
+  const achievements = computeAchievements();
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.3rem;color:var(--reward)">🏆 TROPHÉES</h2>
+    <div class="achievements-grid">
+      ${achievements
+        .map(
+          (a) => `
+        <div class="achievement ${a.earned ? "is-earned" : ""}">
+          <span class="icon">${a.icon}</span>
+          <span class="label">${esc(a.label)}</span>
+        </div>`
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+/* ---------------- Classement (leaderboard partagé) ---------------- */
+async function upsertLeaderboard(subject, score, comboMax) {
+  try {
+    const ref = doc(state.db, "leaderboard", subject, "entries", state.user.uid);
+    const snap = await getDoc(ref);
+    const prevScore = snap.exists() ? snap.data().bestScore : -1;
+    const prevCombo = snap.exists() ? snap.data().bestComboMax || 0 : 0;
+    if (score >= prevScore) {
+      await setDoc(ref, {
+        displayName: state.user.displayName || "Anonyme",
+        bestScore: score,
+        bestComboMax: Math.max(comboMax, prevCombo),
+        updatedAt: todayKey(),
+      });
+    }
+  } catch (err) {
+    console.error("leaderboard upsert failed", err);
+  }
+}
+
+function openLeaderboard(subject) {
+  setView("leaderboard");
+  renderLeaderboard(subject);
+}
+
+async function renderLeaderboard(subject) {
+  const container = document.getElementById("leaderboard-content");
+  container.innerHTML = `<h2 class="marquee" style="font-size:1.1rem;color:var(--reward)">CLASSEMENT — ${esc(subject)}</h2><p class="muted">Chargement…</p>`;
+  try {
+    const q = query(collection(state.db, "leaderboard", subject, "entries"), orderBy("bestScore", "desc"), limit(10));
+    const snap = await getDocs(q);
+    const rows = [];
+    snap.forEach((d) => rows.push(d.data()));
+    container.innerHTML = `
+      <h2 class="marquee" style="font-size:1.1rem;color:var(--reward)">CLASSEMENT — ${esc(subject)}</h2>
+      <table class="highscore-table">
+        <thead><tr><th>#</th><th>Joueur</th><th>Score</th><th>Combo</th></tr></thead>
+        <tbody>${
+          rows.length
+            ? rows
+                .map(
+                  (r, i) =>
+                    `<tr><td>${i + 1}</td><td>${esc(r.displayName)}</td><td class="score">${r.bestScore}%</td><td class="score">x${r.bestComboMax || 0}</td></tr>`
+                )
+                .join("")
+            : '<tr><td colspan="4" class="muted">Personne pour l\'instant, sois le premier !</td></tr>'
+        }</tbody>
+      </table>
+    `;
+  } catch (err) {
+    console.error("leaderboard load failed", err);
+    container.innerHTML = `<p class="error-banner">Impossible de charger le classement.</p>`;
   }
 }
 
