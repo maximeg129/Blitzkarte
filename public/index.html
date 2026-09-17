@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blitzkarte</title>
+<meta name="description" content="Blitzkarte — réviser en mode salle d'arcade." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #14102B;
+    --panel: #1E1840;
+    --accent: #4CF3FF;
+    --error: #FF3EA5;
+    --reward: #FFC145;
+    --tertiary: #9B6BFF;
+    --text: #D8DCE8;
+    --font-display: 'Bungee', system-ui, sans-serif;
+    --font-body: 'Space Grotesk', system-ui, sans-serif;
+    --font-pixel: 'Press Start 2P', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 15% 0%, rgba(155, 107, 255, 0.18), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(76, 243, 255, 0.12), transparent 40%),
+      var(--bg);
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .marquee { font-family: var(--font-display); letter-spacing: 0.5px; }
+
+  button, input, textarea { font-family: inherit; color: inherit; }
+
+  a { color: var(--accent); }
+
+  [hidden] { display: none !important; }
+
+  #app { max-width: 1080px; margin: 0 auto; padding: 0 16px 48px; }
+
+  /* ---------- topbar ---------- */
+  #topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 4px;
+    background: linear-gradient(var(--bg) 80%, transparent);
+    backdrop-filter: blur(4px);
+  }
+  #topbar .logo {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--accent);
+    text-shadow: 0 0 12px rgba(76,243,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #combo-readout {
+    font-family: var(--font-pixel);
+    font-size: 0.7rem;
+    color: var(--reward);
+    padding: 8px 12px;
+    border: 2px solid var(--reward);
+    border-radius: 8px;
+    background: rgba(255, 193, 69, 0.08);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+  }
+  #combo-readout::after {
+    content: "";
+    position: absolute;
+    inset: -40% -60%;
+    background: linear-gradient(100deg, transparent 40%, rgba(255,193,69,0.35) 50%, transparent 60%);
+    animation: trail 2.6s linear infinite;
+  }
+  @keyframes trail { from { transform: translateX(-30%); } to { transform: translateX(30%); } }
+
+  #topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    padding: 10px 18px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text);
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #08131a;
+    box-shadow: 0 0 0 0 rgba(76,243,255,0.6);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(76,243,255,0.55); }
+    50% { box-shadow: 0 0 0 10px rgba(76,243,255,0); }
+  }
+  .btn-secondary { border-color: var(--tertiary); color: var(--text); }
+  .btn-ghost { border-color: rgba(216,220,232,0.3); color: var(--text); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; animation: none; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid rgba(216,220,232,0.3);
+    background: var(--panel);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 1rem;
+  }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- generic screen ---------- */
+  .screen { padding: 24px 0 48px; }
+  .screen-center {
+    min-height: 70vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 16px; padding: 24px;
+  }
+  .panel {
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid rgba(155,107,255,0.25);
+  }
+  .muted { color: rgba(216,220,232,0.65); font-size: 0.9rem; }
+
+  /* ---------- mascot ---------- */
+  .mascot { width: 88px; height: 88px; filter: drop-shadow(0 0 14px rgba(76,243,255,0.5)); }
+
+  /* ---------- empty state ---------- */
+  .empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 16px; text-align: center; }
+  .empty-state p { max-width: 420px; color: rgba(216,220,232,0.75); }
+
+  /* ---------- arcade room ---------- */
+  .arcade-room {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+  }
+  .cabinet {
+    position: relative;
+    background: var(--panel);
+    border-radius: 14px;
+    border: 1px solid rgba(76,243,255,0.15);
+    padding: 0 0 16px;
+    overflow: hidden;
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    transition: transform 0.15s ease;
+  }
+  .cabinet:hover, .cabinet:focus-visible { transform: translateY(-3px); }
+  .cabinet .marquee {
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    background: linear-gradient(90deg, var(--accent), var(--tertiary));
+    color: #0a0a16;
+    font-family: var(--font-display);
+    text-shadow: none;
+  }
+  .cabinet .cabinet-body { padding: 12px 14px 0; }
+  .cabinet h3 { margin: 0 0 8px; font-size: 1rem; }
+  .cabinet .stamp--cleared {
+    position: absolute;
+    top: 40px; right: 14px;
+    font-family: var(--font-pixel);
+    font-size: 0.55rem;
+    color: var(--reward);
+    border: 2px solid var(--reward);
+    border-radius: 6px;
+    padding: 4px 6px;
+    transform: rotate(-12deg);
+    background: rgba(255,193,69,0.08);
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--tertiary);
+    color: #0a0a16;
+    margin-bottom: 8px;
+  }
+
+  .led-row { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 14px 14px; }
+  .led {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: rgba(216,220,232,0.15);
+  }
+  .led--on {
+    background: var(--reward);
+    box-shadow: 0 0 6px 1px rgba(255,193,69,0.8);
+  }
+
+  /* ---------- flashcards ---------- */
+  .card-stage { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px; }
+  .flashcard {
+    width: min(420px, 90vw);
+    height: 260px;
+    perspective: 1200px;
+    cursor: pointer;
+  }
+  .flashcard-inner {
+    position: relative;
+    width: 100%; height: 100%;
+    transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .flashcard.is-flipped .flashcard-inner { transform: rotateY(180deg); }
+  .flashcard-face {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; text-align: center;
+    border-radius: 18px;
+    backface-visibility: hidden;
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    font-size: 1.2rem;
+    box-shadow: 0 0 24px rgba(76,243,255,0.12);
+  }
+  .flashcard-face--back { transform: rotateY(180deg); border-color: var(--tertiary); }
+  .coin-flash {
+    position: absolute; inset: 0; border-radius: 18px;
+    background: white; opacity: 0; pointer-events: none;
+  }
+  .flashcard.is-flashing .coin-flash { animation: flash 0.4s ease-out; }
+  @keyframes flash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+
+  .card-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .card-progress { display: flex; gap: 6px; }
+
+  /* ---------- boss battle ---------- */
+  .boss-battle { margin-top: 12px; }
+  .boss-hp-shell {
+    height: 22px; border-radius: 999px; background: rgba(255,62,165,0.15);
+    border: 2px solid var(--error); overflow: hidden; margin-bottom: 8px;
+  }
+  .boss-hp-fill {
+    height: 100%; background: linear-gradient(90deg, var(--error), var(--reward));
+    transition: width 0.4s ease;
+  }
+  .boss-hp-fill.is-hit { animation: bosshit 0.35s ease; }
+  @keyframes bosshit { 0% { filter: brightness(2.4); } 100% { filter: brightness(1); } }
+  .combo-bar { font-family: var(--font-pixel); font-size: 0.65rem; color: var(--reward); margin-bottom: 18px; }
+  .quiz-question { font-size: 1.15rem; margin: 18px 0; }
+  .quiz-choices { display: grid; gap: 10px; }
+  .quiz-choice {
+    text-align: left; padding: 12px 16px; border-radius: 10px;
+    border: 2px solid rgba(155,107,255,0.4); background: var(--panel); cursor: pointer;
+  }
+  .quiz-choice.is-correct { border-color: var(--reward); background: rgba(255,193,69,0.12); }
+  .quiz-choice.is-wrong { border-color: var(--error); background: rgba(255,62,165,0.12); }
+  .quiz-feedback { margin-top: 12px; font-weight: 700; }
+  .quiz-feedback.good { color: var(--reward); }
+  .quiz-feedback.bad { color: var(--error); }
+
+  /* ---------- results ---------- */
+  .highscore-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .highscore-table th, .highscore-table td {
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(216,220,232,0.15);
+  }
+  .highscore-table td.score { font-family: var(--font-pixel); font-size: 0.75rem; color: var(--reward); }
+
+  .particle-field { position: relative; height: 0; }
+  .particle {
+    position: absolute; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--reward); top: 0; left: 50%;
+    animation: burst 0.9s ease-out forwards;
+  }
+  @keyframes burst {
+    to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+  }
+
+  /* ---------- writing ---------- */
+  textarea.answer-box {
+    width: 100%; min-height: 120px; padding: 12px; border-radius: 10px;
+    background: var(--panel); border: 2px solid rgba(155,107,255,0.4); color: var(--text);
+    font-size: 1rem; resize: vertical;
+  }
+  .score-pill {
+    display: inline-block; font-family: var(--font-pixel); font-size: 0.75rem;
+    padding: 6px 12px; border-radius: 8px; margin-top: 10px;
+  }
+  .score-pill.good { color: #0a0a16; background: var(--reward); }
+  .score-pill.bad { color: #0a0a16; background: var(--error); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; text-align: left; }
+  .field label { font-size: 0.85rem; color: rgba(216,220,232,0.75); }
+  .field input[type="text"] {
+    padding: 10px 12px; border-radius: 8px; background: var(--panel);
+    border: 2px solid rgba(155,107,255,0.4); color: var(--text);
+  }
+
+  .error-banner {
+    background: rgba(255,62,165,0.12); border: 1px solid var(--error); color: var(--text);
+    padding: 10px 14px; border-radius: 10px; margin: 12px 0;
+  }
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    .btn-primary { animation: none; box-shadow: 0 0 0 3px rgba(76,243,255,0.4); }
+    #combo-readout::after { animation: none; content: none; }
+    .flashcard-inner { transition: none; }
+    .coin-flash { display: none; }
+    .boss-hp-fill { transition: none; }
+    .boss-hp-fill.is-hit { animation: none; filter: brightness(1.4); }
+    .cabinet { transition: none; }
+    .particle { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="topbar" hidden>
+    <div class="logo">⚡ BLITZKARTE</div>
+    <div id="combo-readout">COMBO x0</div>
+    <div id="topbar-actions">
+      <button class="icon-btn" id="sound-toggle" type="button" aria-pressed="false" title="Son">🔇</button>
+      <button class="icon-btn" id="signout-btn" type="button" title="Se déconnecter">⏻</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-loading" class="screen-center" data-view>
+      <div class="marquee" style="font-size:1.4rem;color:var(--accent)">⚡ BLITZKARTE</div>
+      <p class="muted">Chargement…</p>
+    </section>
+
+    <section id="view-config" class="screen-center" data-view hidden>
+      <div class="panel" style="max-width:520px">
+        <h2 style="color:var(--error)">Configuration manquante</h2>
+        <p class="muted">Renseigne ton <code>firebaseConfig</code> en haut du script (section « À CONFIGURER ») avec les valeurs de ton projet Firebase pour lancer la salle d'arcade.</p>
+      </div>
+    </section>
+
+    <section id="view-auth" class="screen-center" data-view hidden>
+      <svg class="mascot" viewBox="0 0 100 100" aria-hidden="true">
+        <use href="#blitz-mascot"></use>
+      </svg>
+      <h1 class="marquee" style="font-size:2rem;color:var(--accent)">BLITZKARTE</h1>
+      <p class="muted">Insère ta photo, révise, deviens champion. Connecte-toi pour entrer dans la salle.</p>
+      <button class="btn btn-primary" id="signin-btn" type="button">GO ! Se connecter avec Google</button>
+      <p class="error-banner" id="auth-error" hidden></p>
+    </section>
+
+    <section id="view-room" class="screen" data-view hidden>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h2 class="marquee" style="font-size:1.4rem">LA SALLE D'ARCADE</h2>
+        <button class="btn btn-primary" id="new-set-btn" type="button">+ Nouvelle borne</button>
+      </div>
+      <div id="room-content"></div>
+    </section>
+
+    <section id="view-scan" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="scan-back-btn" type="button">← Retour à la salle</button>
+      <div class="panel" style="margin-top:16px;max-width:520px">
+        <h2 class="marquee" style="font-size:1.1rem;color:var(--accent)">INSÈRE TA PHOTO</h2>
+        <p class="muted">Prends en photo ton exercice, Blitz s'occupe du reste.</p>
+        <div class="field">
+          <label for="scan-file">Photo de l'exercice</label>
+          <input type="file" id="scan-file" accept="image/*" capture="environment" />
+        </div>
+        <div class="field">
+          <label for="scan-subject">Matière (optionnel)</label>
+          <input type="text" id="scan-subject" placeholder="Allemand, Maths…" />
+        </div>
+        <div class="field">
+          <label for="scan-context">Précisions (optionnel)</label>
+          <input type="text" id="scan-context" placeholder="Chapitre, consigne…" />
+        </div>
+        <button class="btn btn-primary" id="scan-generate-btn" type="button">Générer le set</button>
+        <p id="scan-status" class="muted" style="margin-top:10px" hidden></p>
+        <p class="error-banner" id="scan-error" hidden></p>
+      </div>
+      <div id="scan-preview"></div>
+    </section>
+
+    <section id="view-cards" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="cards-back-btn" type="button">← Retour à la salle</button>
+      <div id="cards-content" class="card-stage"></div>
+    </section>
+
+    <section id="view-quiz" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="quiz-back-btn" type="button">← Retour à la salle</button>
+      <div id="quiz-content" class="boss-battle"></div>
+    </section>
+
+    <section id="view-writing" class="screen" data-view hidden>
+      <button class="btn btn-ghost" id="writing-back-btn" type="button">← Retour à la salle</button>
+      <div id="writing-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+
+    <section id="view-results" class="screen" data-view hidden>
+      <div id="results-content" class="panel" style="margin-top:16px;max-width:560px"></div>
+    </section>
+  </main>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="blitz-mascot" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="46" fill="#1E1840" stroke="#4CF3FF" stroke-width="3"/>
+    <polygon points="58,10 30,55 48,55 40,92 74,42 54,42" fill="#FFC145" stroke="#14102B" stroke-width="2"/>
+    <circle cx="46" cy="48" r="3.5" fill="#14102B"/>
+    <circle cx="60" cy="48" r="3.5" fill="#14102B"/>
+    <path d="M46 60 Q53 66 62 59" stroke="#14102B" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<div id="sfx-rack" hidden>
+  <audio id="sfx-coin" src="sfx/coin.mp3" preload="none"></audio>
+  <audio id="sfx-ding" src="sfx/ding.mp3" preload="none"></audio>
+  <audio id="sfx-buzz" src="sfx/buzz.mp3" preload="none"></audio>
+  <audio id="sfx-levelup" src="sfx/levelup.mp3" preload="none"></audio>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// ====== À CONFIGURER : colle ici la config de ton projet Firebase ======
+// (Project settings → General → "Your apps" → app Web. Ces valeurs ne
+// sont pas secrètes, c'est normal qu'elles soient dans le code client.)
+const firebaseConfig = {
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME",
+};
+// =========================================================================
+
+const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function uuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function esc(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
+
+function subjectHue(subject) {
+  let h = 0;
+  for (const ch of String(subject || "")) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return h;
+}
+
+function playSfx(name) {
+  if (!state.doc || !state.doc.soundEnabled) return;
+  try {
+    const el = document.getElementById(`sfx-${name}`);
+    if (el) {
+      el.currentTime = 0;
+      el.play().catch(() => {});
+    }
+  } catch (e) {
+    /* silencieux si l'audio n'est pas disponible */
+  }
+}
+
+function spawnParticles(container) {
+  if (REDUCE_MOTION || !container) return;
+  const field = document.createElement("div");
+  field.className = "particle-field";
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement("span");
+    p.className = "particle";
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 60 + Math.random() * 80;
+    p.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
+    p.style.setProperty("--dy", `${Math.sin(angle) * dist}px`);
+    p.style.background = i % 2 === 0 ? "var(--reward)" : "var(--accent)";
+    field.appendChild(p);
+  }
+  container.appendChild(field);
+  setTimeout(() => field.remove(), 1000);
+}
+
+const views = ["loading", "config", "auth", "room", "scan", "cards", "quiz", "writing", "results"];
+function setView(name) {
+  state.currentView = name;
+  for (const v of views) {
+    document.getElementById(`view-${v}`).hidden = v !== name;
+  }
+  document.getElementById("topbar").hidden = !state.user || name === "auth" || name === "loading" || name === "config";
+}
+
+const state = {
+  app: null,
+  auth: null,
+  db: null,
+  user: null,
+  doc: null,
+  currentView: "loading",
+  currentSetId: null,
+  cardIndex: 0,
+  quiz: null,
+};
+
+function configIsPlaceholder() {
+  return !firebaseConfig.apiKey || firebaseConfig.apiKey === "REPLACE_ME";
+}
+
+async function init() {
+  if (configIsPlaceholder()) {
+    setView("config");
+    return;
+  }
+  try {
+    state.app = initializeApp(firebaseConfig);
+    state.auth = getAuth(state.app);
+    state.db = getFirestore(state.app);
+  } catch (err) {
+    console.error("Firebase init failed", err);
+    setView("config");
+    return;
+  }
+
+  document.getElementById("signin-btn").addEventListener("click", async () => {
+    const errEl = document.getElementById("auth-error");
+    errEl.hidden = true;
+    try {
+      await signInWithPopup(state.auth, new GoogleAuthProvider());
+    } catch (err) {
+      console.error("signIn failed", err);
+      errEl.textContent = "Connexion impossible, réessaie.";
+      errEl.hidden = false;
+    }
+  });
+
+  document.getElementById("signout-btn").addEventListener("click", () => signOut(state.auth));
+
+  document.getElementById("sound-toggle").addEventListener("click", async () => {
+    if (!state.doc) return;
+    state.doc.soundEnabled = !state.doc.soundEnabled;
+    renderSoundToggle();
+    await persistDoc();
+    playSfx("coin");
+  });
+
+  document.getElementById("new-set-btn").addEventListener("click", () => {
+    document.getElementById("scan-preview").innerHTML = "";
+    document.getElementById("scan-status").hidden = true;
+    document.getElementById("scan-error").hidden = true;
+    setView("scan");
+  });
+  const backToRoom = () => { setView("room"); renderRoom(); };
+  document.getElementById("scan-back-btn").addEventListener("click", backToRoom);
+  document.getElementById("cards-back-btn").addEventListener("click", backToRoom);
+  document.getElementById("quiz-back-btn").addEventListener("click", backToRoom);
+  document.getElementById("writing-back-btn").addEventListener("click", backToRoom);
+  document.getElementById("scan-generate-btn").addEventListener("click", onGenerateSet);
+
+  onAuthStateChanged(state.auth, onAuthChanged);
+}
+
+async function onAuthChanged(user) {
+  state.user = user;
+  if (!user) {
+    state.doc = null;
+    setView("auth");
+    return;
+  }
+  setView("loading");
+  await loadUserDoc();
+  applyStreak();
+  renderSoundToggle();
+  renderComboReadout();
+  setView("room");
+  renderRoom();
+}
+
+async function loadUserDoc() {
+  const ref = doc(state.db, "users", state.user.uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    state.doc = snap.data();
+    if (!Array.isArray(state.doc.sets)) state.doc.sets = [];
+    if (!state.doc.streak) state.doc.streak = { count: 0, lastActiveDate: "", bestCount: 0 };
+  } else {
+    state.doc = {
+      profile: {
+        displayName: state.user.displayName || "",
+        email: state.user.email || "",
+        createdAt: todayKey(),
+      },
+      streak: { count: 0, lastActiveDate: "", bestCount: 0 },
+      soundEnabled: false,
+      sets: [],
+    };
+    await setDoc(ref, state.doc);
+  }
+}
+
+async function persistDoc() {
+  if (!state.user || !state.doc) return;
+  const ref = doc(state.db, "users", state.user.uid);
+  await updateDoc(ref, state.doc);
+}
+
+function applyStreak() {
+  const today = todayKey();
+  const streak = state.doc.streak;
+  if (streak.lastActiveDate === today) return;
+  const yesterday = new Date(Date.now() - 86400000);
+  const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+  streak.count = streak.lastActiveDate === yKey ? streak.count + 1 : 1;
+  streak.lastActiveDate = today;
+  streak.bestCount = Math.max(streak.bestCount || 0, streak.count);
+  persistDoc();
+}
+
+function renderComboReadout() {
+  const el = document.getElementById("combo-readout");
+  const n = state.doc && state.doc.streak ? state.doc.streak.count : 0;
+  el.textContent = `COMBO x${n} 🔥`;
+}
+
+function renderSoundToggle() {
+  const btn = document.getElementById("sound-toggle");
+  const on = !!(state.doc && state.doc.soundEnabled);
+  btn.textContent = on ? "🔊" : "🔇";
+  btn.setAttribute("aria-pressed", String(on));
+}
+
+/* ---------------- Room ---------------- */
+function renderRoom() {
+  const container = document.getElementById("room-content");
+  const sets = state.doc.sets || [];
+  if (sets.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg class="mascot" viewBox="0 0 100 100" aria-hidden="true"><use href="#blitz-mascot"></use></svg>
+        <p><strong>La salle est vide, viens scanner ta première fiche !</strong></p>
+      </div>`;
+    return;
+  }
+  container.innerHTML = `<div class="arcade-room">${sets.map(cabinetHtml).join("")}</div>`;
+  container.querySelectorAll(".cabinet").forEach((el) => {
+    el.addEventListener("click", () => openSet(el.dataset.setId));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openSet(el.dataset.setId);
+      }
+    });
+  });
+}
+
+function cabinetHtml(set) {
+  const total = set.cards.length;
+  const learned = set.cards.filter((c) => c.learned).length;
+  const hue = subjectHue(set.subject);
+  const leds = set.cards
+    .map((c) => `<span class="led ${c.learned ? "led--on" : ""}"></span>`)
+    .join("");
+  return `
+    <div class="cabinet" tabindex="0" role="button" data-set-id="${esc(set.id)}" style="filter:hue-rotate(${hue}deg)">
+      <div class="marquee" style="filter:hue-rotate(${-hue}deg)">${esc(set.title)}</div>
+      <div class="cabinet-body" style="filter:hue-rotate(${-hue}deg)">
+        <span class="badge">${esc(set.subject)}</span>
+        <h3>${learned}/${total} fiches sues</h3>
+      </div>
+      <div class="led-row">${leds}</div>
+      ${set.completed ? '<div class="stamp--cleared" style="filter:hue-rotate(0)">LEVEL CLEARED</div>' : ""}
+    </div>`;
+}
+
+function findSet(id) {
+  return (state.doc.sets || []).find((s) => s.id === id) || null;
+}
+
+function openSet(id) {
+  state.currentSetId = id;
+  state.cardIndex = 0;
+  setView("cards");
+  renderCards();
+}
+
+/* ---------------- Scan / generate ---------------- */
+async function onGenerateSet() {
+  const fileInput = document.getElementById("scan-file");
+  const statusEl = document.getElementById("scan-status");
+  const errEl = document.getElementById("scan-error");
+  const genBtn = document.getElementById("scan-generate-btn");
+  errEl.hidden = true;
+
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) {
+    errEl.textContent = "Choisis une photo d'abord.";
+    errEl.hidden = false;
+    return;
+  }
+
+  genBtn.disabled = true;
+  statusEl.hidden = false;
+  statusEl.textContent = "Blitz scanne ta photo…";
+
+  try {
+    const imageBase64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const token = await state.user.getIdToken();
+    const res = await fetch("/api/generateSet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        imageBase64,
+        mimeType: file.type,
+        subject: document.getElementById("scan-subject").value.trim(),
+        context: document.getElementById("scan-context").value.trim(),
+      }),
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok || !payload || !payload.ok) {
+      throw new Error((payload && payload.msg) || "Échec de génération.");
+    }
+    renderScanPreview(payload.data);
+    statusEl.textContent = "Set généré, jette un œil !";
+  } catch (err) {
+    console.error("generateSet failed", err);
+    errEl.textContent = "Impossible de contacter le serveur, réessaie plus tard.";
+    errEl.hidden = false;
+    statusEl.hidden = true;
+  } finally {
+    genBtn.disabled = false;
+  }
+}
+
+function renderScanPreview(data) {
+  const container = document.getElementById("scan-preview");
+  container.innerHTML = `
+    <div class="panel" style="margin-top:16px;max-width:560px">
+      <h3>${esc(data.title)} <span class="badge">${esc(data.subject)}</span></h3>
+      <p class="muted">${data.cards.length} fiches · ${data.quiz.length} questions de quiz · ${data.writing.length} exercice(s) d'écriture</p>
+      <button class="btn btn-primary" id="accept-set-btn" type="button">Ajouter à la salle</button>
+      <button class="btn btn-ghost" id="discard-set-btn" type="button">Annuler</button>
+    </div>`;
+  document.getElementById("accept-set-btn").addEventListener("click", async () => {
+    await acceptGeneratedSet(data);
+  });
+  document.getElementById("discard-set-btn").addEventListener("click", () => {
+    container.innerHTML = "";
+  });
+}
+
+async function acceptGeneratedSet(data) {
+  const newSet = {
+    id: uuid(),
+    title: data.title,
+    subject: data.subject,
+    createdAt: todayKey(),
+    completed: false,
+    cards: data.cards.map((c) => ({ id: uuid(), front: c.front, back: c.back, learned: false, lastReviewedAt: null })),
+    quiz: data.quiz.map((q) => ({ id: uuid(), question: q.question, choices: q.choices, answer: q.answer })),
+    writing: data.writing.map((w) => ({ id: uuid(), prompt: w.prompt, referenceAnswer: w.referenceAnswer })),
+    quizHighScores: [],
+  };
+  state.doc.sets.push(newSet);
+  await persistDoc();
+  document.getElementById("scan-file").value = "";
+  document.getElementById("scan-preview").innerHTML = "";
+  setView("room");
+  renderRoom();
+}
+
+/* ---------------- Flashcards ---------------- */
+function renderCards() {
+  const set = findSet(state.currentSetId);
+  const container = document.getElementById("cards-content");
+  if (!set) {
+    container.innerHTML = "";
+    setView("room");
+    return;
+  }
+  const card = set.cards[state.cardIndex];
+  const leds = set.cards.map((c) => `<span class="led ${c.learned ? "led--on" : ""}"></span>`).join("");
+
+  container.innerHTML = `
+    <span class="badge">${esc(set.subject)}</span>
+    <h2 class="marquee" style="font-size:1.2rem">${esc(set.title)}</h2>
+    <div class="flashcard" id="flip-card" tabindex="0" role="button" aria-label="Retourner la carte">
+      <div class="flashcard-inner">
+        <div class="flashcard-face flashcard-face--front">${esc(card.front)}</div>
+        <div class="flashcard-face flashcard-face--back">${esc(card.back)}</div>
+        <div class="coin-flash"></div>
+      </div>
+    </div>
+    <div class="card-progress">${leds}</div>
+    <div class="card-controls">
+      <button class="btn btn-ghost" id="prev-card-btn" type="button" ${state.cardIndex === 0 ? "disabled" : ""}>← Précédente</button>
+      <button class="btn btn-secondary" id="mark-learned-btn" type="button">${card.learned ? "Fiche sue ✓" : "Marquer comme sue"}</button>
+      <button class="btn btn-ghost" id="next-card-btn" type="button" ${state.cardIndex === set.cards.length - 1 ? "disabled" : ""}>Suivante →</button>
+    </div>
+    <div class="card-controls">
+      <button class="btn btn-primary" id="start-quiz-btn" type="button">⚔ Boss Battle</button>
+      ${set.writing.length ? '<button class="btn btn-secondary" id="start-writing-btn" type="button">✏ Écriture</button>' : ""}
+    </div>
+  `;
+
+  const flip = document.getElementById("flip-card");
+  const doFlip = () => {
+    flip.classList.toggle("is-flipped");
+    flip.classList.add("is-flashing");
+    playSfx("coin");
+    setTimeout(() => flip.classList.remove("is-flashing"), 400);
+  };
+  flip.addEventListener("click", doFlip);
+  flip.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      doFlip();
+    }
+  });
+
+  document.getElementById("prev-card-btn").addEventListener("click", () => {
+    state.cardIndex = Math.max(0, state.cardIndex - 1);
+    renderCards();
+  });
+  document.getElementById("next-card-btn").addEventListener("click", () => {
+    state.cardIndex = Math.min(set.cards.length - 1, state.cardIndex + 1);
+    renderCards();
+  });
+  document.getElementById("mark-learned-btn").addEventListener("click", async () => {
+    card.learned = !card.learned;
+    card.lastReviewedAt = todayKey();
+    checkSetCompletion(set, container);
+    await persistDoc();
+    renderCards();
+  });
+  document.getElementById("start-quiz-btn").addEventListener("click", () => startQuiz(set));
+  const writingBtn = document.getElementById("start-writing-btn");
+  if (writingBtn) writingBtn.addEventListener("click", () => startWriting(set));
+}
+
+function checkSetCompletion(set, container) {
+  const allLearned = set.cards.length > 0 && set.cards.every((c) => c.learned);
+  if (allLearned && !set.completed) {
+    set.completed = true;
+    playSfx("levelup");
+    spawnParticles(container);
+  } else if (!allLearned && set.completed) {
+    set.completed = false;
+  }
+}
+
+/* ---------------- Boss battle (quiz) ---------------- */
+function startQuiz(set) {
+  if (!set.quiz.length) return;
+  state.quiz = {
+    setId: set.id,
+    index: 0,
+    hp: set.quiz.length,
+    maxHp: set.quiz.length,
+    combo: 0,
+    comboMax: 0,
+    score: 0,
+  };
+  setView("quiz");
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const set = findSet(state.quiz.setId);
+  const q = set.quiz[state.quiz.index];
+  const container = document.getElementById("quiz-content");
+  const hpPct = Math.max(0, (state.quiz.hp / state.quiz.maxHp) * 100);
+  const choices = q.choices && q.choices.length ? q.choices : null;
+
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--error)">BOSS BATTLE</h2>
+    <div class="boss-hp-shell"><div class="boss-hp-fill" id="boss-hp-fill" style="width:${hpPct}%"></div></div>
+    <div class="combo-bar">COMBO x${state.quiz.combo}</div>
+    <div class="quiz-question">${esc(q.question)}</div>
+    ${
+      choices
+        ? `<div class="quiz-choices">${choices
+            .map((c, i) => `<button class="quiz-choice" data-choice="${i}" type="button">${esc(c)}</button>`)
+            .join("")}</div>`
+        : `<div class="field"><input type="text" id="quiz-text-answer" placeholder="Ta réponse…" /></div>
+           <button class="btn btn-primary" id="quiz-submit-text" type="button">Valider</button>`
+    }
+    <div id="quiz-feedback"></div>
+  `;
+
+  if (choices) {
+    container.querySelectorAll(".quiz-choice").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const chosen = choices[Number(btn.dataset.choice)];
+        answerQuiz(chosen === q.answer, container);
+      });
+    });
+  } else {
+    const submit = () => {
+      const val = document.getElementById("quiz-text-answer").value.trim().toLowerCase();
+      answerQuiz(val === q.answer.trim().toLowerCase(), container);
+    };
+    document.getElementById("quiz-submit-text").addEventListener("click", submit);
+    document.getElementById("quiz-text-answer").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submit();
+    });
+  }
+}
+
+function answerQuiz(isCorrect, container) {
+  const fb = document.getElementById("quiz-feedback");
+  const hpFill = document.getElementById("boss-hp-fill");
+  if (isCorrect) {
+    state.quiz.hp -= 1;
+    state.quiz.combo += 1;
+    state.quiz.comboMax = Math.max(state.quiz.comboMax, state.quiz.combo);
+    state.quiz.score += 1;
+    hpFill.classList.add("is-hit");
+    playSfx("ding");
+    fb.innerHTML = `<div class="quiz-feedback good">Coup porté ! Combo x${state.quiz.combo} 🔥</div>`;
+  } else {
+    state.quiz.combo = 0;
+    playSfx("buzz");
+    fb.innerHTML = `<div class="quiz-feedback bad">Raté ! Combo réinitialisé.</div>`;
+  }
+  setTimeout(() => {
+    state.quiz.index += 1;
+    const set = findSet(state.quiz.setId);
+    if (state.quiz.index >= set.quiz.length) {
+      finishQuiz(set);
+    } else {
+      renderQuiz();
+    }
+  }, 700);
+}
+
+async function finishQuiz(set) {
+  const pct = Math.round((state.quiz.score / state.quiz.maxHp) * 100);
+  const entry = { score: pct, date: todayKey(), comboMax: state.quiz.comboMax };
+  set.quizHighScores = [...(set.quizHighScores || []), entry]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+  await persistDoc();
+
+  const container = document.getElementById("results-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.3rem;color:var(--reward)">${pct >= 100 ? "BOSS VAINCU" : "MANCHE TERMINÉE"}</h2>
+    <p>Score : ${pct}% · Combo max x${state.quiz.comboMax}</p>
+    <table class="highscore-table">
+      <thead><tr><th>Score</th><th>Combo</th><th>Date</th></tr></thead>
+      <tbody>${set.quizHighScores
+        .map((e) => `<tr><td class="score">${e.score}%</td><td class="score">x${e.comboMax}</td><td>${esc(e.date)}</td></tr>`)
+        .join("")}</tbody>
+    </table>
+    <div class="card-controls" style="margin-top:16px">
+      <button class="btn btn-primary" id="retry-quiz-btn" type="button">Manche suivante →</button>
+      <button class="btn btn-ghost" id="results-room-btn" type="button">Retour à la salle</button>
+    </div>
+  `;
+  document.getElementById("retry-quiz-btn").addEventListener("click", () => startQuiz(set));
+  document.getElementById("results-room-btn").addEventListener("click", () => {
+    setView("room");
+    renderRoom();
+  });
+  setView("results");
+}
+
+/* ---------------- Writing ---------------- */
+function startWriting(set, index = 0) {
+  state.currentSetId = set.id;
+  renderWriting(index);
+  setView("writing");
+}
+
+function renderWriting(index) {
+  const set = findSet(state.currentSetId);
+  const item = set.writing[index];
+  const container = document.getElementById("writing-content");
+  container.innerHTML = `
+    <h2 class="marquee" style="font-size:1.1rem;color:var(--tertiary)">EXERCICE D'ÉCRITURE</h2>
+    <p>${esc(item.prompt)}</p>
+    <textarea class="answer-box" id="writing-answer" placeholder="Écris ta réponse ici…"></textarea>
+    <div class="card-controls" style="margin-top:12px">
+      <button class="btn btn-primary" id="writing-submit-btn" type="button">Corriger</button>
+    </div>
+    <div id="writing-result"></div>
+  `;
+  document.getElementById("writing-submit-btn").addEventListener("click", async () => {
+    await submitWriting(item, index, set);
+  });
+}
+
+async function submitWriting(item, index, set) {
+  const resultEl = document.getElementById("writing-result");
+  const btn = document.getElementById("writing-submit-btn");
+  const answerText = document.getElementById("writing-answer").value.trim();
+  if (!answerText) return;
+  btn.disabled = true;
+  resultEl.innerHTML = `<p class="muted">Blitz corrige ta réponse…</p>`;
+  try {
+    const token = await state.user.getIdToken();
+    const res = await fetch("/api/checkWriting", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ answerText, referenceAnswer: item.referenceAnswer, prompt: item.prompt }),
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok || !payload || !payload.ok) {
+      throw new Error((payload && payload.msg) || "Échec de correction.");
+    }
+    const { correct, score, feedback, corrections } = payload.data;
+    playSfx(correct ? "ding" : "buzz");
+    resultEl.innerHTML = `
+      <span class="score-pill ${correct ? "good" : "bad"}">${score}/100</span>
+      <p>${esc(feedback)}</p>
+      ${corrections ? `<p class="muted">Correction : ${esc(corrections)}</p>` : ""}
+      ${
+        index + 1 < set.writing.length
+          ? '<button class="btn btn-secondary" id="writing-next-btn" type="button">Exercice suivant →</button>'
+          : '<button class="btn btn-ghost" id="writing-room-btn" type="button">Retour à la salle</button>'
+      }
+    `;
+    const nextBtn = document.getElementById("writing-next-btn");
+    if (nextBtn) nextBtn.addEventListener("click", () => renderWriting(index + 1));
+    const roomBtn = document.getElementById("writing-room-btn");
+    if (roomBtn) roomBtn.addEventListener("click", () => { setView("room"); renderRoom(); });
+  } catch (err) {
+    console.error("checkWriting failed", err);
+    resultEl.innerHTML = `<p class="error-banner">Impossible de contacter le serveur, réessaie plus tard.</p>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
